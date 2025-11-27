@@ -920,6 +920,565 @@
 						},
 						"description": "Get all tools filtered by status"
 					}
+				},
+				{
+					"name": "Tool Features",
+					"item": [
+						{
+							"name": "Get All Features for Tool",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test('Response has success property', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('success');",
+											"    pm.expect(response.success).to.be.true;",
+											"});",
+											"",
+											"pm.test('Response has features array', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('features');",
+											"    pm.expect(response.features).to.be.an('array');",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    const response = pm.response.json();",
+											"    if (response.features && response.features.length > 0) {",
+											"        pm.collectionVariables.set('featureId', response.features[0].id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/:toolId/features",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										":toolId",
+										"features"
+									],
+									"variable": [
+										{
+											"key": "toolId",
+											"value": "cgpa-calculator",
+											"description": "Tool ID (e.g., cgpa-calculator, progress-analytics, study-planner)"
+										}
+									]
+								},
+								"description": "Get all available features for a specific tool. Authentication is optional."
+							}
+						},
+						{
+							"name": "Get Specific Feature",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test('Response has feature property', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('success');",
+											"    pm.expect(response).to.have.property('feature');",
+											"    pm.expect(response.feature).to.have.property('id');",
+											"    pm.expect(response.feature).to.have.property('name');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/:toolId/features/:featureId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										":toolId",
+										"features",
+										":featureId"
+									],
+									"variable": [
+										{
+											"key": "toolId",
+											"value": "cgpa-calculator",
+											"description": "Tool ID"
+										},
+										{
+											"key": "featureId",
+											"value": "calculate",
+											"description": "Feature ID"
+										}
+									]
+								},
+								"description": "Get details about a specific feature for a tool. Authentication is optional."
+							}
+						},
+						{
+							"name": "Execute Feature - CGPA Calculate",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test('Response has success property', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('success');",
+											"    pm.expect(response.success).to.be.true;",
+											"});",
+											"",
+											"pm.test('Response has result with CGPA', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('result');",
+											"    pm.expect(response.result).to.have.property('cgpa');",
+											"    pm.expect(response.result.cgpa).to.be.a('number');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"courses\": [\n    {\n      \"grade\": \"A\",\n      \"creditHours\": 3\n    },\n    {\n      \"grade\": \"B+\",\n      \"creditHours\": 4\n    },\n    {\n      \"grade\": \"A-\",\n      \"creditHours\": 3\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/cgpa-calculator/features/calculate/execute",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										"cgpa-calculator",
+										"features",
+										"calculate",
+										"execute"
+									]
+								},
+								"description": "Execute CGPA calculation feature. No authentication required. Valid grades: A+, A, A-, B+, B, B-, C+, C, C-, D+, D, F"
+							}
+						},
+						{
+							"name": "Execute Feature - CGPA Save Calculation",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test('Response indicates success', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('success');",
+											"    pm.expect(response.success).to.be.true;",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"courses\": [\n    {\n      \"grade\": \"A\",\n      \"creditHours\": 3\n    },\n    {\n      \"grade\": \"B+\",\n      \"creditHours\": 4\n    }\n  ],\n  \"cgpa\": 3.75,\n  \"semester\": \"Fall 2024\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/cgpa-calculator/features/save-calculation/execute",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										"cgpa-calculator",
+										"features",
+										"save-calculation",
+										"execute"
+									]
+								},
+								"description": "Save CGPA calculation to user history. Requires authentication."
+							}
+						},
+						{
+							"name": "Execute Feature - Progress Analytics Get Stats",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test('Response has stats', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('result');",
+											"    pm.expect(response.result).to.have.property('stats');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"period\": \"month\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/progress-analytics/features/get-stats/execute",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										"progress-analytics",
+										"features",
+										"get-stats",
+										"execute"
+									]
+								},
+								"description": "Get learning progress statistics. Requires authentication. Period options: week, month, year, all"
+							}
+						},
+						{
+							"name": "Execute Feature - Progress Analytics Export Report",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200 or 403', function () {",
+											"    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    pm.test('Response has download URL', function () {",
+											"        const response = pm.response.json();",
+											"        pm.expect(response.result).to.have.property('downloadUrl');",
+											"    });",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"format\": \"pdf\",\n  \"period\": \"month\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/progress-analytics/features/export-report/execute",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										"progress-analytics",
+										"features",
+										"export-report",
+										"execute"
+									]
+								},
+								"description": "Export progress report as PDF or CSV. Requires authentication and premium subscription. Format: pdf or csv"
+							}
+						},
+						{
+							"name": "Execute Feature - Study Planner Create Schedule",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test('Response has schedule', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('result');",
+											"    pm.expect(response.result).to.have.property('schedule');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"courses\": [\n    {\n      \"id\": \"course1\",\n      \"name\": \"Mathematics\",\n      \"hoursPerWeek\": 6\n    },\n    {\n      \"id\": \"course2\",\n      \"name\": \"Physics\",\n      \"hoursPerWeek\": 4\n    }\n  ],\n  \"availableHours\": {\n    \"monday\": 4,\n    \"tuesday\": 4,\n    \"wednesday\": 4,\n    \"thursday\": 4,\n    \"friday\": 4,\n    \"saturday\": 2,\n    \"sunday\": 2\n  },\n  \"startDate\": \"2024-01-01T00:00:00.000Z\",\n  \"endDate\": \"2024-05-31T23:59:59.999Z\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/study-planner/features/create-schedule/execute",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										"study-planner",
+										"features",
+										"create-schedule",
+										"execute"
+									]
+								},
+								"description": "Create a new study schedule. Requires authentication."
+							}
+						},
+						{
+							"name": "Execute Feature - Text to PDF Convert",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test('Response has conversion ID', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('result');",
+											"    pm.expect(response.result).to.have.property('conversionId');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"text\": \"This is sample text to convert to PDF.\\n\\nYou can include multiple lines and paragraphs.\\n\\nThe conversion will process this text and generate a PDF file.\",\n  \"filename\": \"sample-document.pdf\",\n  \"options\": {\n    \"pageSize\": \"A4\",\n    \"margins\": {\n      \"top\": 20,\n      \"bottom\": 20,\n      \"left\": 20,\n      \"right\": 20\n    }\n  }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/text-to-pdf/features/convert/execute",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										"text-to-pdf",
+										"features",
+										"convert",
+										"execute"
+									]
+								},
+								"description": "Convert text to PDF. No authentication required."
+							}
+						},
+						{
+							"name": "Execute Feature - PDF to Link Upload",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test('Response has link', function () {",
+											"    const response = pm.response.json();",
+											"    pm.expect(response).to.have.property('result');",
+											"    pm.expect(response.result).to.have.property('link');",
+											"    pm.expect(response.result.link).to.have.property('url');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"file\": {\n    \"name\": \"document.pdf\",\n    \"size\": 1024000,\n    \"data\": \"base64-encoded-file-data-here\"\n  },\n  \"expiresIn\": 30,\n  \"password\": null\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/pdf-to-link/features/upload/execute",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										"pdf-to-link",
+										"features",
+										"upload",
+										"execute"
+									]
+								},
+								"description": "Upload PDF and generate shareable link. Requires authentication. expiresIn is in days (default: 30)."
+							}
+						},
+						{
+							"name": "Execute Feature - Course Creator Create Course",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status code is 200 or 403', function () {",
+											"    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    pm.test('Response has course', function () {",
+											"        const response = pm.response.json();",
+											"        pm.expect(response).to.have.property('result');",
+											"        pm.expect(response.result).to.have.property('course');",
+											"    });",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"Introduction to Computer Science\",\n  \"description\": \"A comprehensive course covering fundamental concepts of computer science\",\n  \"category\": \"Computer Science\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/tools/course-creator/features/create-course/execute",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"tools",
+										"course-creator",
+										"features",
+										"create-course",
+										"execute"
+									]
+								},
+								"description": "Create a new course. Requires authentication and premium subscription."
+							}
+						}
+					]
 				}
 			]
 		}
@@ -953,6 +1512,11 @@
 		{
 			"key": "toolId",
 			"value": "progress-analytics",
+			"type": "string"
+		},
+		{
+			"key": "featureId",
+			"value": "calculate",
 			"type": "string"
 		},
 		{

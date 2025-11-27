@@ -39,6 +39,45 @@ const toolSchema = new mongoose.Schema({
     required: [true, 'Tool URL is required'],
     trim: true,
   },
+  features: [{
+    id: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    requiresAuth: {
+      type: Boolean,
+      default: false,
+    },
+    requiresPremium: {
+      type: Boolean,
+      default: false,
+    },
+    parameters: [{
+      name: String,
+      type: String, // 'string', 'number', 'boolean', 'array', 'object'
+      required: Boolean,
+      description: String,
+    }],
+  }],
+  config: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
+  handler: {
+    type: String,
+    trim: true,
+    // Points to the controller module name (e.g., 'cgpaCalculatorController')
+  },
   createdAt: {
     type: Date,
     default: Date.now,
