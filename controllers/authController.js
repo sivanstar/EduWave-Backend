@@ -76,6 +76,7 @@ exports.register = async (req, res) => {
             fullName: user.fullName,
             email: user.email,
             emailVerified: user.emailVerified,
+            role: user.role,
           },
         },
       });
@@ -160,6 +161,7 @@ exports.login = async (req, res) => {
           fullName: user.fullName,
           email: user.email,
           emailVerified: user.emailVerified,
+          role: user.role,
         },
         accessToken,
         refreshToken,
@@ -174,26 +176,56 @@ exports.login = async (req, res) => {
   }
 };
 
-// @desc    Verify email
-// @route   GET /auth/verify-email/:token
-// @access  Public
+
 exports.verifyEmail = async (req, res) => {
   try {
+    // Get token from params (remove any query string if present)
+    let token = req.params.token;
+    
+    // Remove query string if accidentally included
+    if (token && token.includes('?')) {
+      token = token.split('?')[0];
+    }
+    
+    // Validate token exists
+    if (!token || token.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token is required',
+      });
+    }
+
     // Get hashed token
     const hashedToken = crypto
       .createHash('sha256')
-      .update(req.params.token)
+      .update(token.trim())
       .digest('hex');
 
+    // Find user with matching token
     const user = await User.findOne({
       emailVerificationToken: hashedToken,
-      emailVerificationExpire: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid or expired verification token',
+        message: 'Invalid verification token. The token may be incorrect or already used.',
+      });
+    }
+
+    // Check if token has expired
+    if (user.emailVerificationExpire && user.emailVerificationExpire < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token has expired. Please request a new verification email.',
+      });
+    }
+
+    // Check if email is already verified
+    if (user.emailVerified) {
+      return res.status(200).json({
+        success: true,
+        message: 'Email is already verified',
       });
     }
 
@@ -212,6 +244,86 @@ exports.verifyEmail = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Server error during email verification',
+    });
+  }
+};
+
+// @desc    Resend verification email
+// @route   POST /auth/resend-verification
+// @access  Public
+exports.resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists with this email, a verification email has been sent.',
+      });
+    }
+
+    // Check if already verified
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified',
+      });
+    }
+
+    // Generate new verification token
+    const { verificationToken, hashedToken } = generateVerificationToken();
+
+    // Update user with new token
+    user.emailVerificationToken = hashedToken;
+    user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    await user.save({ validateBeforeSave: false });
+
+    // Create verification URL
+    const verificationUrl = `${req.protocol}://${req.get('host')}/auth/verify-email/${verificationToken}`;
+
+    // Send verification email
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Email Verification - EduWise',
+        html: `
+          <h1>Email Verification - EduWise</h1>
+          <p>Please verify your email address by clicking the link below:</p>
+          <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
+          <p>Or copy and paste this URL into your browser:</p>
+          <p>${verificationUrl}</p>
+          <p>This link will expire in 24 hours.</p>
+          <p>If you did not request this verification email, please ignore it.</p>
+        `,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification email sent successfully. Please check your email.',
+      });
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email. Please try again later.',
+      });
+    }
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error during resend verification',
     });
   }
 };

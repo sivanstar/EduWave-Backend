@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Course = require('../models/Course');
 const CourseProgress = require('../models/CourseProgress');
+const { protect, authorize } = require('../middleware/auth');
 
 // GET all courses
 router.get('/', async (req, res) => {
@@ -26,8 +27,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create a new course
-router.post('/', async (req, res) => {
+// POST create a new course - Instructor and Admin only
+router.post('/', protect, authorize('instructor', 'admin'), async (req, res) => {
   try {
     const { title, desc, lessons, courseduration } = req.body;
 
@@ -63,8 +64,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update a course
-router.put('/:id', async (req, res) => {
+// PUT update a course - Instructor and Admin only
+router.put('/:id', protect, authorize('instructor', 'admin'), async (req, res) => {
   try {
     const { title, desc, lessons, courseduration } = req.body;
 
@@ -102,8 +103,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE a course
-router.delete('/:id', async (req, res) => {
+// DELETE a course - Instructor and Admin only
+router.delete('/:id', protect, authorize('instructor', 'admin'), async (req, res) => {
   try {
     const course = await Course.findByIdAndDelete(req.params.id);
     if (!course) {

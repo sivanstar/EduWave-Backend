@@ -29,6 +29,7 @@ app.get('/health', (req, res) => {
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const courseRoutes = require('./routes/courseRoutes');
+const toolRoutes = require('./routes/toolRoutes');
 
 // Auth routes
 app.use('/auth', authRoutes);
@@ -38,6 +39,9 @@ app.use('/api/users', userRoutes);
 
 // Course routes
 app.use('/api/courses', courseRoutes);
+
+// Tool routes
+app.use('/api/tools', toolRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

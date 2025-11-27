@@ -104,6 +104,7 @@
 									"        pm.collectionVariables.set('accessToken', response.data.accessToken);",
 									"        pm.collectionVariables.set('refreshToken', response.data.refreshToken);",
 									"        pm.collectionVariables.set('userId', response.data.user.id);",
+									"        pm.collectionVariables.set('userRole', response.data.user.role || 'user');",
 									"    }",
 									"}"
 								],
@@ -168,6 +169,31 @@
 			"name": "Users",
 			"item": [
 				{
+					"name": "Get Current User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						},
+						"description": "Get current authenticated user profile. Requires authentication."
+					}
+				},
+				{
 					"name": "Get All Users",
 					"request": {
 						"method": "GET",
@@ -188,7 +214,7 @@
 								"users"
 							]
 						},
-						"description": "Get all users. Requires authentication."
+						"description": "Get all users. Requires admin role."
 					}
 				},
 				{
@@ -220,7 +246,48 @@
 								}
 							]
 						},
-						"description": "Get a single user by ID. Requires authentication."
+						"description": "Get a single user by ID. Users can view their own profile, admins can view any profile."
+					}
+				},
+				{
+					"name": "Update User Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"instructor\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id/role",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								":id",
+								"role"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{userId}}",
+									"description": "User ID"
+								}
+							]
+						},
+						"description": "Update user role. Requires admin role. Valid roles: user, instructor, admin"
 					}
 				},
 				{
@@ -252,7 +319,7 @@
 								"users"
 							]
 						},
-						"description": "Create a new user. Requires authentication."
+						"description": "Create a new user. Requires admin role."
 					}
 				},
 				{
@@ -272,7 +339,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"John Updated\",\n  \"email\": \"john.updated@example.com\"\n}"
+							"raw": "{\n  \"fullName\": \"John Updated\",\n  \"email\": \"john.updated@example.com\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/users/:id",
@@ -292,7 +359,7 @@
 								}
 							]
 						},
-						"description": "Update a user by ID. Requires authentication."
+						"description": "Update a user by ID. Users can update their own profile, admins can update any profile. Only admins can change roles via this endpoint."
 					}
 				},
 				{
@@ -324,7 +391,7 @@
 								}
 							]
 						},
-						"description": "Delete a user by ID. Requires authentication."
+						"description": "Delete a user by ID. Requires admin role."
 					}
 				}
 			]
@@ -416,6 +483,11 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
 							}
 						],
 						"body": {
@@ -432,7 +504,7 @@
 								"courses"
 							]
 						},
-						"description": "Create a new course with lessons"
+						"description": "Create a new course with lessons. Requires instructor or admin role."
 					}
 				},
 				{
@@ -443,6 +515,11 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
 							}
 						],
 						"body": {
@@ -467,14 +544,20 @@
 								}
 							]
 						},
-						"description": "Update a course by ID. You can update title, desc, courseduration, and/or lessons."
+						"description": "Update a course by ID. Requires instructor or admin role. You can update title, desc, courseduration, and/or lessons."
 					}
 				},
 				{
 					"name": "Delete Course",
 					"request": {
 						"method": "DELETE",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
 						"url": {
 							"raw": "{{baseUrl}}/api/courses/:id",
 							"host": [
@@ -493,7 +576,7 @@
 								}
 							]
 						},
-						"description": "Delete a course by ID. This will also delete all progress records for this course."
+						"description": "Delete a course by ID. Requires instructor or admin role. This will also delete all progress records for this course."
 					}
 				},
 				{
@@ -600,6 +683,245 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Tools",
+			"item": [
+				{
+					"name": "Get All Tools",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/tools",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tools"
+							]
+						},
+						"description": "Get all tools"
+					}
+				},
+				{
+					"name": "Get Tool by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.id) {",
+									"        pm.collectionVariables.set('toolId', response.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/tools/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tools",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{toolId}}",
+									"description": "Tool ID (e.g., progress-analytics)"
+								}
+							]
+						},
+						"description": "Get a single tool by ID"
+					}
+				},
+				{
+					"name": "Create Tool",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.id) {",
+									"        pm.collectionVariables.set('toolId', response.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id\": \"new-tool\",\n  \"name\": \"New Tool\",\n  \"icon\": \"<i class=\\\"fas fa-star\\\"></i>\",\n  \"description\": \"A new tool description\",\n  \"category\": \"Academic\",\n  \"status\": \"available\",\n  \"url\": \"new-tool.html\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tools",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tools"
+							]
+						},
+						"description": "Create a new tool. Requires admin role. Categories: Analytics, Planning, Academic, Document, File Sharing. Status: available, coming-soon"
+					}
+				},
+				{
+					"name": "Update Tool",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Tool Name\",\n  \"description\": \"Updated description\",\n  \"status\": \"available\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tools/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tools",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{toolId}}",
+									"description": "Tool ID"
+								}
+							]
+						},
+						"description": "Update a tool by ID. Requires admin role. You can update name, icon, description, category, status, and/or url."
+					}
+				},
+				{
+					"name": "Delete Tool",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tools/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tools",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{toolId}}",
+									"description": "Tool ID"
+								}
+							]
+						},
+						"description": "Delete a tool by ID. Requires admin role."
+					}
+				},
+				{
+					"name": "Get Tools by Category",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/tools/category/:category",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tools",
+								"category",
+								":category"
+							],
+							"variable": [
+								{
+									"key": "category",
+									"value": "Academic",
+									"description": "Category: Analytics, Planning, Academic, Document, File Sharing"
+								}
+							]
+						},
+						"description": "Get all tools filtered by category"
+					}
+				},
+				{
+					"name": "Get Tools by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/tools/status/:status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tools",
+								"status",
+								":status"
+							],
+							"variable": [
+								{
+									"key": "status",
+									"value": "available",
+									"description": "Status: available, coming-soon"
+								}
+							]
+						},
+						"description": "Get all tools filtered by status"
+					}
+				}
+			]
 		}
 	],
 	"variable": [
@@ -626,6 +948,16 @@
 		{
 			"key": "courseId",
 			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "toolId",
+			"value": "progress-analytics",
+			"type": "string"
+		},
+		{
+			"key": "userRole",
+			"value": "user",
 			"type": "string"
 		}
 	]
