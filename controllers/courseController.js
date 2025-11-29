@@ -1,0 +1,434 @@
+const Course = require('../models/Course');
+const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs').promises;
+
+// Generate unique access code
+function generateAccessCode() {
+  return crypto.randomBytes(3).toString('hex').toUpperCase();
+}
+
+// Generate unique course ID
+function generateCourseId() {
+  return `COURSE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Create a new course
+exports.createCourse = async (req, res) => {
+  try {
+    const { title, instructorName, category, description, duration, videoUrl, notes } = req.body;
+
+    if (!title || !instructorName || !category || !description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide title, instructorName, category, and description',
+      });
+    }
+
+    // Check if user is instructor or admin
+    if (req.user.role !== 'instructor' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only instructors and admins can create courses',
+      });
+    }
+
+    // Generate unique IDs
+    let courseId = generateCourseId();
+    
+    // Ensure uniqueness
+    while (await Course.findOne({ courseId })) {
+      courseId = generateCourseId();
+    }
+
+    // Generate access code only if not provided (for course-creator)
+    let accessCode = req.body.accessCode;
+    if (!accessCode && req.body.generateAccessCode !== false) {
+      accessCode = generateAccessCode();
+      while (await Course.findOne({ accessCode })) {
+        accessCode = generateAccessCode();
+      }
+    }
+
+    const courseData = {
+      courseId,
+      title,
+      instructorName,
+      instructor: req.user._id,
+      category,
+      description,
+      duration: duration || '',
+      videoUrl: videoUrl || '',
+      notes: notes || '',
+      files: req.body.files || [],
+    };
+
+    // Add access code only if provided (for course-creator)
+    if (accessCode) {
+      courseData.accessCode = accessCode;
+    }
+
+    // Add course-manager fields if provided
+    if (req.body.icon) courseData.icon = req.body.icon;
+    if (req.body.difficulty) courseData.difficulty = req.body.difficulty;
+    if (req.body.lessons) courseData.lessons = req.body.lessons;
+    if (req.body.totalLessons !== undefined) courseData.totalLessons = req.body.totalLessons;
+    if (req.body.objectives) courseData.objectives = req.body.objectives;
+    if (req.body.prerequisites) courseData.prerequisites = req.body.prerequisites;
+    if (req.body.contentType) courseData.contentType = req.body.contentType;
+    if (req.body.attribution) courseData.attribution = req.body.attribution;
+    if (req.body.licenseType) courseData.licenseType = req.body.licenseType;
+
+    const course = await Course.create(courseData);
+
+    res.status(201).json({
+      success: true,
+      data: course,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get all courses for the instructor
+exports.getMyCourses = async (req, res) => {
+  try {
+    const courses = await Course.find({ instructor: req.user._id })
+      .sort({ createdAt: -1 })
+      .populate('instructor', 'fullName email');
+
+    res.status(200).json({
+      success: true,
+      count: courses.length,
+      data: courses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get course by ID
+exports.getCourseById = async (req, res) => {
+  try {
+    const course = await Course.findOne({ courseId: req.params.courseId })
+      .populate('instructor', 'fullName email')
+      .populate('enrolledStudents.userId', 'fullName email');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: course,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get course by access code
+exports.getCourseByAccessCode = async (req, res) => {
+  try {
+    const course = await Course.findOne({ accessCode: req.params.accessCode.toUpperCase() })
+      .populate('instructor', 'fullName email');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid access code. Course not found.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: course,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Enroll in a course
+exports.enrollInCourse = async (req, res) => {
+  try {
+    const course = await Course.findOne({ courseId: req.params.courseId });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    // Check if already enrolled
+    const isEnrolled = course.enrolledStudents.some(
+      student => student.userId.toString() === req.user._id.toString()
+    );
+
+    if (isEnrolled) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are already enrolled in this course',
+      });
+    }
+
+    course.enrolledStudents.push({
+      userId: req.user._id,
+      enrolledAt: new Date(),
+      progress: 0,
+    });
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Successfully enrolled in course',
+      data: course,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get enrolled courses for a student
+exports.getEnrolledCourses = async (req, res) => {
+  try {
+    const courses = await Course.find({
+      'enrolledStudents.userId': req.user._id,
+    })
+      .sort({ createdAt: -1 })
+      .populate('instructor', 'fullName email');
+
+    res.status(200).json({
+      success: true,
+      count: courses.length,
+      data: courses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Download course file
+exports.downloadFile = async (req, res) => {
+  try {
+    const { courseId, fileName } = req.params;
+    
+    const course = await Course.findOne({ courseId });
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    const file = course.files.find(f => f.name === fileName || f.path.includes(fileName));
+    if (!file) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found',
+      });
+    }
+
+    const filePath = path.join(__dirname, '..', file.path);
+    
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found on server',
+      });
+    }
+
+    res.download(filePath, file.name);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Update a course
+exports.updateCourse = async (req, res) => {
+  try {
+    const course = await Course.findOne({ courseId: req.params.courseId });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    // Check if user owns the course or is admin
+    if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this course',
+      });
+    }
+
+    // Update fields
+    const {
+      title,
+      description,
+      category,
+      icon,
+      difficulty,
+      duration,
+      videoUrl,
+      notes,
+      lessons,
+      totalLessons,
+      objectives,
+      prerequisites,
+      contentType,
+      attribution,
+      licenseType,
+    } = req.body;
+
+    if (title) course.title = title;
+    if (description) course.description = description;
+    if (category) course.category = category;
+    if (icon !== undefined) course.icon = icon;
+    if (difficulty) course.difficulty = difficulty;
+    if (duration !== undefined) course.duration = duration;
+    if (videoUrl !== undefined) course.videoUrl = videoUrl;
+    if (notes !== undefined) course.notes = notes;
+    if (lessons) course.lessons = lessons;
+    if (totalLessons !== undefined) course.totalLessons = totalLessons;
+    if (objectives) course.objectives = objectives;
+    if (prerequisites !== undefined) course.prerequisites = prerequisites;
+    if (contentType) course.contentType = contentType;
+    if (attribution !== undefined) course.attribution = attribution;
+    if (licenseType) course.licenseType = licenseType;
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Delete a course
+exports.deleteCourse = async (req, res) => {
+  try {
+    const course = await Course.findOne({ courseId: req.params.courseId });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    // Check if user owns the course or is admin
+    if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this course',
+      });
+    }
+
+    // Delete associated files
+    if (course.files && course.files.length > 0) {
+      for (const file of course.files) {
+        try {
+          const filePath = path.join(__dirname, '..', file.path);
+          await fs.unlink(filePath);
+        } catch (error) {
+          console.error(`Error deleting file ${file.path}:`, error);
+        }
+      }
+    }
+
+    await course.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Course deleted successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get all courses (for course manager grid)
+exports.getAllCourses = async (req, res) => {
+  try {
+    const { category, difficulty, search } = req.query;
+    const query = {};
+
+    // Filter by instructor if not admin
+    if (req.user.role !== 'admin') {
+      query.instructor = req.user._id;
+    }
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (difficulty) {
+      query.difficulty = difficulty;
+    }
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const courses = await Course.find(query)
+      .sort({ createdAt: -1 })
+      .populate('instructor', 'fullName email')
+      .select('-enrolledStudents');
+
+    res.status(200).json({
+      success: true,
+      count: courses.length,
+      data: courses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+

@@ -1,0 +1,2409 @@
+{
+	"info": {
+		"_postman_id": "eduwise-api-collection",
+		"name": "EDU-WAVE API Collection",
+		"description": "Complete API collection for EDU-WAVE (EduWise) backend endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Base Routes",
+			"item": [
+				{
+					"name": "Welcome",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": ["{{baseUrl}}"],
+							"path": [""]
+						}
+					}
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"passwordConfirm\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.accessToken) {",
+									"        pm.environment.set(\"accessToken\", jsonData.data.accessToken);",
+									"        pm.environment.set(\"refreshToken\", jsonData.data.refreshToken);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Verify Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-email/:token",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "verify-email", ":token"],
+							"variable": [
+								{
+									"key": "token",
+									"value": "verification-token-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Resend Verification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/resend-verification",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "resend-verification"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "me"]
+						}
+					}
+				},
+				{
+					"name": "Get All Users (Admin/Instructor)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create User (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"John Updated\",\n  \"email\": \"johnupdated@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update User Role (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"instructor\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id/role",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id", "role"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete User (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Courses",
+			"item": [
+				{
+					"name": "Upload Files",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", "upload"]
+						}
+					}
+				},
+				{
+					"name": "Get Course by Access Code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/access/:accessCode",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", "access", ":accessCode"],
+							"variable": [
+								{
+									"key": "accessCode",
+									"value": "access-code-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Download Course File",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/:courseId/files/:fileName",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", ":courseId", "files", ":fileName"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								},
+								{
+									"key": "fileName",
+									"value": "file-name-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Course by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Introduction to JavaScript\",\n  \"description\": \"Learn the basics of JavaScript\",\n  \"accessCode\": \"JS101\",\n  \"files\": [\"file1.pdf\", \"file2.pdf\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses"]
+						}
+					}
+				},
+				{
+					"name": "Get My Courses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/my-courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", "my-courses"]
+						}
+					}
+				},
+				{
+					"name": "Get All Courses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", "all"]
+						}
+					}
+				},
+				{
+					"name": "Get Enrolled Courses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/enrolled/my-courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", "enrolled", "my-courses"]
+						}
+					}
+				},
+				{
+					"name": "Update Course",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Course Title\",\n  \"description\": \"Updated description\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Course",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Enroll in Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"accessCode\": \"JS101\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/courses/:courseId/enroll",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "courses", ":courseId", "enroll"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Text to PDF",
+			"item": [
+				{
+					"name": "Generate PDF",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"text\": \"This is sample text to convert to PDF\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/text-to-pdf/generate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "text-to-pdf", "generate"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "PDF to Link",
+			"item": [
+				{
+					"name": "Upload PDF",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "pdf",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/pdf-to-link/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "pdf-to-link", "upload"]
+						}
+					}
+				},
+				{
+					"name": "Get PDF Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/pdf-to-link/info/:shareableLink",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "pdf-to-link", "info", ":shareableLink"],
+							"variable": [
+								{
+									"key": "shareableLink",
+									"value": "shareable-link-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Download PDF",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/pdf-to-link/files/:shareableLink",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "pdf-to-link", "files", ":shareableLink"],
+							"variable": [
+								{
+									"key": "shareableLink",
+									"value": "shareable-link-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Study Planner",
+			"item": [
+				{
+					"name": "Create Session",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subject\": \"Mathematics\",\n  \"duration\": 60,\n  \"date\": \"2024-01-15\",\n  \"notes\": \"Study algebra chapter 5\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/sessions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "sessions"]
+						}
+					}
+				},
+				{
+					"name": "Get Sessions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/sessions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "sessions"]
+						}
+					}
+				},
+				{
+					"name": "Get Session by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/sessions/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "sessions", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "session-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Session",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subject\": \"Mathematics\",\n  \"duration\": 90,\n  \"notes\": \"Updated notes\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/sessions/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "sessions", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "session-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Session",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/sessions/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "sessions", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "session-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete All Sessions",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/sessions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "sessions"]
+						}
+					}
+				},
+				{
+					"name": "Get Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/statistics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "statistics"]
+						}
+					}
+				},
+				{
+					"name": "Get Preferences",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/preferences",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "preferences"]
+						}
+					}
+				},
+				{
+					"name": "Update Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dailyGoal\": 120,\n  \"reminderTime\": \"09:00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/study-planner/preferences",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "study-planner", "preferences"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Progress Analytics",
+			"item": [
+				{
+					"name": "Create Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Data Structures\",\n  \"code\": \"CS201\",\n  \"credits\": 3\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "courses"]
+						}
+					}
+				},
+				{
+					"name": "Get Courses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "courses"]
+						}
+					}
+				},
+				{
+					"name": "Delete Course",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/courses/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete All Courses",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "courses"]
+						}
+					}
+				},
+				{
+					"name": "Get Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/statistics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "statistics"]
+						}
+					}
+				},
+				{
+					"name": "Create Semester",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Fall 2024\",\n  \"startDate\": \"2024-09-01\",\n  \"endDate\": \"2024-12-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/semesters",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "semesters"]
+						}
+					}
+				},
+				{
+					"name": "Get Semesters",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/semesters",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "semesters"]
+						}
+					}
+				},
+				{
+					"name": "Update Semester",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Fall 2024 Updated\",\n  \"startDate\": \"2024-09-01\",\n  \"endDate\": \"2024-12-20\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/semesters/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "semesters", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "semester-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Semester",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/semesters/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "semesters", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "semester-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Goal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Complete all assignments\",\n  \"description\": \"Finish all course assignments by end of semester\",\n  \"targetDate\": \"2024-12-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/goals",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "goals"]
+						}
+					}
+				},
+				{
+					"name": "Get Goals",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/goals",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "goals"]
+						}
+					}
+				},
+				{
+					"name": "Update Goal",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Goal Title\",\n  \"completed\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/goals/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "goals", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "goal-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Goal",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress-analytics/goals/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "progress-analytics", "goals", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "goal-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "CGPA Calculator",
+			"item": [
+				{
+					"name": "Calculate CGPA",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"courses\": [\n    {\"name\": \"Math\", \"credits\": 3, \"grade\": \"A\"},\n    {\"name\": \"Physics\", \"credits\": 3, \"grade\": \"B\"}\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/cgpa-calculator/calculate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cgpa-calculator", "calculate"]
+						}
+					}
+				},
+				{
+					"name": "Save Calculation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"courses\": [\n    {\"name\": \"Math\", \"credits\": 3, \"grade\": \"A\"},\n    {\"name\": \"Physics\", \"credits\": 3, \"grade\": \"B\"}\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/cgpa-calculator/save",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cgpa-calculator", "save"]
+						}
+					}
+				},
+				{
+					"name": "Get Saved Calculation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/cgpa-calculator",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cgpa-calculator"]
+						}
+					}
+				},
+				{
+					"name": "Delete Calculation",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/cgpa-calculator",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cgpa-calculator"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Get Overview",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/overview",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "overview"]
+						}
+					}
+				},
+				{
+					"name": "Get Course Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/courses/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "courses", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get User Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Forum Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/forum/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "forum", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Tools Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/tools/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "tools", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Create Announcement",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Important Announcement\",\n  \"message\": \"This is an important message for all users\",\n  \"type\": \"info\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/announcements",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "announcements"]
+						}
+					}
+				},
+				{
+					"name": "Get Announcements",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/announcements",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "announcements"]
+						}
+					}
+				},
+				{
+					"name": "Delete Announcement",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/announcements/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "announcements", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "announcement-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Premium Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/premium/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "premium", "settings"]
+						}
+					}
+				},
+				{
+					"name": "Update Premium Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"monthlyCourseLimit\": 5,\n  \"trialDuration\": 7\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/premium/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "premium", "settings"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Leaderboard",
+			"item": [
+				{
+					"name": "Get Leaderboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/leaderboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "leaderboard"]
+						}
+					}
+				},
+				{
+					"name": "Get User Rank",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/leaderboard/rank",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "leaderboard", "rank"]
+						}
+					}
+				},
+				{
+					"name": "Get User Badges",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/leaderboard/badges",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "leaderboard", "badges"]
+						}
+					}
+				},
+				{
+					"name": "Update User Badges",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"badges\": [\"first_post\", \"active_learner\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/leaderboard/badges",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "leaderboard", "badges"]
+						}
+					}
+				},
+				{
+					"name": "Update User Points",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"points\": 100\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/leaderboard/points",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "leaderboard", "points"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Games",
+			"item": [
+				{
+					"name": "Get Game Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/games/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "games", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Create Duel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"topic\": \"Mathematics\",\n  \"difficulty\": \"medium\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/games/duel/create",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "games", "duel", "create"]
+						}
+					}
+				},
+				{
+					"name": "Join Duel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"duelKey\": \"duel-key-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/games/duel/join",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "games", "duel", "join"]
+						}
+					}
+				},
+				{
+					"name": "Get Duel Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/games/duel/:duelKey",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "games", "duel", ":duelKey"],
+							"variable": [
+								{
+									"key": "duelKey",
+									"value": "duel-key-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Start Duel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"duelKey\": \"duel-key-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/games/duel/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "games", "duel", "start"]
+						}
+					}
+				},
+				{
+					"name": "Cancel Duel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"duelKey\": \"duel-key-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/games/duel/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "games", "duel", "cancel"]
+						}
+					}
+				},
+				{
+					"name": "Submit Game Result",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"duelKey\": \"duel-key-here\",\n  \"score\": 85,\n  \"time\": 120\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/games/result",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "games", "result"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Forum",
+			"item": [
+				{
+					"name": "Get Forum Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Contributors",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/contributors",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", "contributors"]
+						}
+					}
+				},
+				{
+					"name": "Get Posts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forum",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum"]
+						}
+					}
+				},
+				{
+					"name": "Get Post by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"New Forum Post\",\n  \"content\": \"This is the content of my post\",\n  \"category\": \"general\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/forum",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum"]
+						}
+					}
+				},
+				{
+					"name": "Update Post",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Post Title\",\n  \"content\": \"Updated content\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Post",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Reply",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is my reply to the post\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id/replies",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id", "replies"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Reply",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id/replies/:replyId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id", "replies", ":replyId"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								},
+								{
+									"key": "replyId",
+									"value": "reply-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Vote Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vote\": \"up\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id/vote",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id", "vote"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Vote Reply",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vote\": \"up\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id/replies/:replyId/vote",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id", "replies", ":replyId", "vote"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								},
+								{
+									"key": "replyId",
+									"value": "reply-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Report Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Inappropriate content\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id/report",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id", "report"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Report Reply",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Inappropriate content\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/forum/:id/replies/:replyId/report",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forum", ":id", "replies", ":replyId", "report"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post-id-here"
+								},
+								{
+									"key": "replyId",
+									"value": "reply-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Video Player",
+			"item": [
+				{
+					"name": "Get User Progress",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/video-player/progress",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "video-player", "progress"]
+						}
+					}
+				},
+				{
+					"name": "Get Course Progress",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/video-player/progress/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "video-player", "progress", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Complete Lesson",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lessonId\": \"lesson-id-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/video-player/progress/:courseId/complete",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "video-player", "progress", ":courseId", "complete"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Watch Time",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lessonId\": \"lesson-id-here\",\n  \"watchTime\": 300\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/video-player/progress/:courseId/watch-time",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "video-player", "progress", ":courseId", "watch-time"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Premium",
+			"item": [
+				{
+					"name": "Get Premium Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/premium/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "premium", "settings"]
+						}
+					}
+				},
+				{
+					"name": "Get Premium Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/premium/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "premium", "status"]
+						}
+					}
+				},
+				{
+					"name": "Start Trial",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/premium/trial/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "premium", "trial", "start"]
+						}
+					}
+				},
+				{
+					"name": "Check Course Access",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/premium/course-access/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "premium", "course-access", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Enroll in Premium Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"courseId\": \"course-id-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/premium/enroll",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "premium", "enroll"]
+						}
+					}
+				},
+				{
+					"name": "Get Monthly Courses Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/premium/monthly-status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "premium", "monthly-status"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Get Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"]
+						}
+					}
+				},
+				{
+					"name": "Get Unread Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/unread-count",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "unread-count"]
+						}
+					}
+				},
+				{
+					"name": "Create Notification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"New Notification\",\n  \"message\": \"You have a new message\",\n  \"type\": \"info\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"]
+						}
+					}
+				},
+				{
+					"name": "Mark as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/:id/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", ":id", "read"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Mark All as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/read-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "read-all"]
+						}
+					}
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

@@ -43,6 +43,55 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'instructor', 'admin'],
     default: 'user',
   },
+  points: {
+    type: Number,
+    default: 0,
+  },
+  badges: {
+    achievement: [{
+      id: String,
+      earned: Boolean,
+      progress: Number,
+      earnedAt: Date,
+    }],
+    point: [{
+      id: String,
+      earned: Boolean,
+      earnedAt: Date,
+    }],
+  },
+  forumStats: {
+    posts: {
+      type: Number,
+      default: 0,
+    },
+    helpfulVotes: {
+      type: Number,
+      default: 0,
+    },
+  },
+  isPro: {
+    type: Boolean,
+    default: false,
+  },
+  trialStartDate: {
+    type: Date,
+  },
+  trialExpired: {
+    type: Boolean,
+    default: false,
+  },
+  upgradeDate: {
+    type: Date,
+  },
+  coursesThisMonth: [{
+    courseId: String,
+    enrolledAt: Date,
+  }],
+  currentMonth: {
+    type: String, // Format: "YYYY-MM"
+  },
+  coursesAccessed: [String],
   createdAt: {
     type: Date,
     default: Date.now,
