@@ -1164,7 +1164,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"courses\": [\n    {\"name\": \"Math\", \"credits\": 3, \"grade\": \"A\"},\n    {\"name\": \"Physics\", \"credits\": 3, \"grade\": \"B\"}\n  ]\n}"
+							"raw": "{\n  \"semesters\": [\n    {\n      \"number\": 1,\n      \"courses\": [\n        {\"courseName\": \"MTH101\", \"units\": 3, \"grade\": \"A\"},\n        {\"courseName\": \"PHY101\", \"units\": 3, \"grade\": \"B\"},\n        {\"courseName\": \"CHM101\", \"units\": 2, \"grade\": \"A\"}\n      ]\n    },\n    {\n      \"number\": 2,\n      \"courses\": [\n        {\"courseName\": \"MTH102\", \"units\": 3, \"grade\": \"B\"},\n        {\"courseName\": \"PHY102\", \"units\": 3, \"grade\": \"A\"}\n      ]\n    }\n  ],\n  \"assumedGrade\": \"B\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/cgpa-calculator/calculate",
@@ -1189,7 +1189,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"courses\": [\n    {\"name\": \"Math\", \"credits\": 3, \"grade\": \"A\"},\n    {\"name\": \"Physics\", \"credits\": 3, \"grade\": \"B\"}\n  ]\n}"
+							"raw": "{\n  \"semesters\": [\n    {\n      \"number\": 1,\n      \"courses\": [\n        {\"courseName\": \"MTH101\", \"units\": 3, \"grade\": \"A\"},\n        {\"courseName\": \"PHY101\", \"units\": 3, \"grade\": \"B\"},\n        {\"courseName\": \"CHM101\", \"units\": 2, \"grade\": \"A\"}\n      ]\n    },\n    {\n      \"number\": 2,\n      \"courses\": [\n        {\"courseName\": \"MTH102\", \"units\": 3, \"grade\": \"B\"},\n        {\"courseName\": \"PHY102\", \"units\": 3, \"grade\": \"A\"}\n      ]\n    }\n  ]\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/cgpa-calculator/save",

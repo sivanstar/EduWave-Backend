@@ -2,6 +2,7 @@ const User = require('../models/User');
 const { generateTokens } = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
 const generateVerificationToken = require('../utils/generateVerificationToken');
+const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 exports.register = async (req, res) => {
@@ -144,6 +145,26 @@ exports.login = async (req, res) => {
         message: 'Invalid credentials',
       });
     }
+
+    // Update login streak
+    const today = new Date().toDateString();
+    const lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate).toDateString() : null;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (!lastLogin) {
+      user.loginStreak = 1;
+    } else if (lastLogin === yesterday.toDateString()) {
+      user.loginStreak = (user.loginStreak || 0) + 1;
+    } else if (lastLogin !== today) {
+      user.loginStreak = 1;
+    }
+
+    user.lastLoginDate = new Date();
+
+    // Check consistent badge (30 day streak)
+    const badgeService = require('../utils/badgeService');
+    await badgeService.checkConsistent(user._id);
 
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
@@ -325,6 +346,85 @@ exports.resendVerification = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Server error during resend verification',
+    });
+  }
+};
+
+// Refresh access token using refresh token
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required',
+      });
+    }
+
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key');
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+    }
+
+    // Find user and verify refresh token matches
+    const user = await User.findById(decoded.id).select('+refreshToken');
+
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token',
+      });
+    }
+
+    // Generate new tokens
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id);
+
+    // Update refresh token in database
+    user.refreshToken = newRefreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        accessToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error during token refresh',
+    });
+  }
+};
+
+// Logout - invalidate refresh token
+exports.logout = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+      user.refreshToken = undefined;
+      await user.save({ validateBeforeSave: false });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error during logout',
     });
   }
 };

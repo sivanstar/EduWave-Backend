@@ -67,6 +67,15 @@ exports.createPost = async (req, res) => {
       });
     }
 
+    // Check if user is premium (free users can only reply)
+    const user = await User.findById(req.user._id);
+    if (!user.isPro && !user.trialStartDate) {
+      return res.status(403).json({
+        success: false,
+        message: 'Free users can only reply to posts. Upgrade to Premium to create posts.',
+      });
+    }
+
     const post = await ForumPost.create({
       title,
       content,
@@ -76,13 +85,21 @@ exports.createPost = async (req, res) => {
       category,
     });
 
-    // Update user stats
-    const user = await User.findById(req.user._id);
+    // Update user stats and activity
     if (!user.forumStats) {
       user.forumStats = { posts: 0, helpfulVotes: 0 };
     }
     user.forumStats.posts = (user.forumStats.posts || 0) + 1;
+    user.lastPostCreated = {
+      postId: post._id.toString(),
+      title: post.title,
+      createdAt: post.createdAt,
+    };
     await user.save();
+    
+    // Check first step badge
+    const badgeService = require('../utils/badgeService');
+    await badgeService.checkFirstStep(user._id);
 
     res.status(201).json({
       success: true,
@@ -205,6 +222,20 @@ exports.addReply = async (req, res) => {
 
     await post.save();
 
+    // Award 1 point to post author for each reply received
+    if (post.author.toString() !== req.user._id.toString()) {
+      const postAuthor = await User.findById(post.author);
+      if (postAuthor) {
+        postAuthor.points = (postAuthor.points || 0) + 1;
+        await postAuthor.save();
+        
+        // Check trending badge (100 replies)
+        const badgeService = require('../utils/badgeService');
+        await badgeService.checkTrending(postAuthor._id);
+        await badgeService.checkPointBadges(postAuthor._id);
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: post.replies[post.replies.length - 1],
@@ -280,10 +311,11 @@ exports.votePost = async (req, res) => {
       post.votedBy = post.votedBy.filter(id => id.toString() !== userId.toString());
       post.helpfulVotes = Math.max(0, post.helpfulVotes - 1);
 
-      // Update author's helpful votes
+      // Update author's helpful votes and remove 0.2 points
       const author = await User.findById(post.author);
       if (author && author.forumStats) {
         author.forumStats.helpfulVotes = Math.max(0, (author.forumStats.helpfulVotes || 0) - 1);
+        author.points = Math.max(0, (author.points || 0) - 0.2);
         await author.save();
       }
     } else {
@@ -291,13 +323,19 @@ exports.votePost = async (req, res) => {
       post.votedBy.push(userId);
       post.helpfulVotes += 1;
 
-      // Update author's helpful votes
+      // Update author's helpful votes and award 0.2 points per like
       const author = await User.findById(post.author);
       if (!author.forumStats) {
         author.forumStats = { posts: 0, helpfulVotes: 0 };
       }
       author.forumStats.helpfulVotes = (author.forumStats.helpfulVotes || 0) + 1;
+      author.points = (author.points || 0) + 0.2;
       await author.save();
+      
+      // Check wave influencer badge (100 likes)
+      const badgeService = require('../utils/badgeService');
+      await badgeService.checkWaveInfluencer(author._id);
+      await badgeService.checkPointBadges(author._id);
     }
 
     await post.save();
@@ -348,6 +386,7 @@ exports.voteReply = async (req, res) => {
       const replyAuthor = await User.findById(reply.author);
       if (replyAuthor && replyAuthor.forumStats) {
         replyAuthor.forumStats.helpfulVotes = Math.max(0, (replyAuthor.forumStats.helpfulVotes || 0) - 1);
+        replyAuthor.points = Math.max(0, (replyAuthor.points || 0) - 0.2);
         await replyAuthor.save();
       }
     } else {
@@ -359,6 +398,7 @@ exports.voteReply = async (req, res) => {
         replyAuthor.forumStats = { posts: 0, helpfulVotes: 0 };
       }
       replyAuthor.forumStats.helpfulVotes = (replyAuthor.forumStats.helpfulVotes || 0) + 1;
+      replyAuthor.points = (replyAuthor.points || 0) + 0.2;
       await replyAuthor.save();
     }
 

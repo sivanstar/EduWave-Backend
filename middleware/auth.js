@@ -63,49 +63,5 @@ exports.authorize = (...roles) => {
   };
 };
 
-// Helper function to check if user has admin role
-exports.isAdmin = (user) => {
-  return user && user.role === 'admin';
-};
-
-// Helper function to check if user has instructor role
-exports.isInstructor = (user) => {
-  return user && user.role === 'instructor';
-};
-
-// Helper function to check if user has user role
-exports.isUser = (user) => {
-  return user && user.role === 'user';
-};
-
-// Helper function to check if user is admin or instructor
-exports.isAdminOrInstructor = (user) => {
-  return user && (user.role === 'admin' || user.role === 'instructor');
-};
-
-// Middleware to check if user owns resource or is admin
-exports.ownsResourceOrAdmin = (resourceUserId) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized to access this route',
-      });
-    }
-
-    const userId = typeof resourceUserId === 'function' 
-      ? resourceUserId(req) 
-      : resourceUserId;
-
-    if (req.user.role !== 'admin' && req.user._id.toString() !== userId?.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to access this resource',
-      });
-    }
-
-    next();
-  };
-};
 
 

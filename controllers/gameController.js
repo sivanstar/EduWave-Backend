@@ -35,7 +35,12 @@ exports.createDuel = async (req, res) => {
 
     // Check duel limits
     const stats = await getOrCreateStats(req.user._id);
+    const user = await User.findById(req.user._id);
+    const isPremium = user.isPro || (user.trialStartDate && !user.trialExpired);
+    
     const today = new Date().toISOString().split('T')[0];
+    const currentWeek = new Date().toISOString().split('T')[0].substring(0, 7) + '-' + 
+      Math.ceil(new Date().getDate() / 7);
     
     // Reset daily count if new day
     if (stats.lastDuelDate && new Date(stats.lastDuelDate).toISOString().split('T')[0] !== today) {
@@ -43,14 +48,27 @@ exports.createDuel = async (req, res) => {
       stats.lastDuelDate = new Date();
     }
 
-    // Check limits (assuming free users: 1/day, 3/week)
-    const dailyLimit = 1; // Can be made configurable
-    const weeklyLimit = 3;
+    // Reset weekly count if new week
+    if (stats.lastDuelWeek !== currentWeek) {
+      stats.duelsThisWeek = 0;
+      stats.lastDuelWeek = currentWeek;
+    }
+
+    // Check limits based on premium status
+    const dailyLimit = isPremium ? 5 : 1;
+    const weeklyLimit = isPremium ? 20 : 3;
 
     if (stats.duelsToday >= dailyLimit) {
       return res.status(403).json({
         success: false,
-        message: 'Daily duel limit reached',
+        message: `Daily duel limit reached (${dailyLimit} per day). ${isPremium ? '' : 'Upgrade to Premium for 5 duels per day.'}`,
+      });
+    }
+
+    if (stats.duelsThisWeek >= weeklyLimit) {
+      return res.status(403).json({
+        success: false,
+        message: `Weekly duel limit reached (${weeklyLimit} per week). ${isPremium ? '' : 'Upgrade to Premium for 20 duels per week.'}`,
       });
     }
 
@@ -61,6 +79,13 @@ exports.createDuel = async (req, res) => {
     }
 
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+    // Update stats
+    stats.duelsToday += 1;
+    stats.duelsThisWeek += 1;
+    stats.lastDuelDate = new Date();
+    stats.lastDuelWeek = currentWeek;
+    await stats.save();
 
     const duel = await GameSession.create({
       duelKey,
@@ -318,6 +343,8 @@ exports.submitGameResult = async (req, res) => {
       if (duel.hostScore > duel.opponentScore) {
         const hostStats = await getOrCreateStats(duel.hostId);
         hostStats.gamesWon += 1;
+        hostStats.currentGameStreak = (hostStats.currentGameStreak || 0) + 1;
+        hostStats.maxGameStreak = Math.max(hostStats.maxGameStreak || 0, hostStats.currentGameStreak);
         hostStats.pointsEarned += 5;
         await hostStats.save();
         
@@ -326,30 +353,57 @@ exports.submitGameResult = async (req, res) => {
         if (hostUser) {
           hostUser.points = (hostUser.points || 0) + 5;
           await hostUser.save();
+          
+          // Check wave rider badge (5 wins in a row)
+          const badgeService = require('../utils/badgeService');
+          if (hostStats.currentGameStreak >= 5) {
+            await badgeService.awardBadge(hostUser._id, 'wave_rider');
+          }
+          await badgeService.checkPointBadges(hostUser._id);
         }
         
+        // Loser loses streak
+        opponentStats.currentGameStreak = 0;
         opponentStats.pointsEarned += 2;
+        await opponentStats.save();
         const opponentUser = await User.findById(duel.opponentId);
         if (opponentUser) {
           opponentUser.points = (opponentUser.points || 0) + 2;
           await opponentUser.save();
+          const badgeService = require('../utils/badgeService');
+          await badgeService.checkPointBadges(opponentUser._id);
         }
       } else if (duel.opponentScore > duel.hostScore) {
+        // Opponent wins
         stats.gamesWon += 1;
+        stats.currentGameStreak = (stats.currentGameStreak || 0) + 1;
+        stats.maxGameStreak = Math.max(stats.maxGameStreak || 0, stats.currentGameStreak);
         stats.pointsEarned += 5;
+        await stats.save();
         const opponentUser = await User.findById(duel.opponentId);
         if (opponentUser) {
           opponentUser.points = (opponentUser.points || 0) + 5;
           await opponentUser.save();
+          
+          // Check wave rider badge (5 wins in a row)
+          const badgeService = require('../utils/badgeService');
+          if (stats.currentGameStreak >= 5) {
+            await badgeService.awardBadge(opponentUser._id, 'wave_rider');
+          }
+          await badgeService.checkPointBadges(opponentUser._id);
         }
         
+        // Host loses streak
         const hostStats = await getOrCreateStats(duel.hostId);
+        hostStats.currentGameStreak = 0;
         hostStats.pointsEarned += 2;
         await hostStats.save();
         const hostUser = await User.findById(duel.hostId);
         if (hostUser) {
           hostUser.points = (hostUser.points || 0) + 2;
           await hostUser.save();
+          const badgeService = require('../utils/badgeService');
+          await badgeService.checkPointBadges(hostUser._id);
         }
       } else {
         // Draw

@@ -52,6 +52,7 @@ exports.getLeaderboard = async (req, res) => {
 exports.getUserBadges = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('badges points');
+    const badgeService = require('../utils/badgeService');
 
     if (!user) {
       return res.status(404).json({
@@ -60,11 +61,21 @@ exports.getUserBadges = async (req, res) => {
       });
     }
 
+    // Check all badges before returning
+    await badgeService.checkAllBadges(user._id);
+    
+    // Reload user to get updated badges
+    const updatedUser = await User.findById(req.user._id).select('badges points');
+
     res.status(200).json({
       success: true,
       data: {
-        badges: user.badges || { achievement: [], point: [] },
-        points: user.points || 0,
+        badges: updatedUser.badges || { achievement: [], point: [] },
+        points: updatedUser.points || 0,
+        badgeDefinitions: {
+          achievement: badgeService.ACHIEVEMENT_BADGES,
+          point: badgeService.POINT_BADGES,
+        },
       },
     });
   } catch (error) {
@@ -121,6 +132,11 @@ exports.updateUserPoints = async (req, res) => {
     if (points !== undefined) {
       user.points = (user.points || 0) + parseInt(points);
       await user.save();
+      
+      // Check badges when points change
+      const badgeService = require('../utils/badgeService');
+      await badgeService.checkPointBadges(user._id);
+      await badgeService.checkWaveChampion(user._id);
     }
 
     res.status(200).json({
@@ -154,6 +170,10 @@ exports.getUserRank = async (req, res) => {
     });
     const rank = usersAbove + 1;
     const totalUsers = await User.countDocuments();
+
+    // Check wave champion badge (top 3)
+    const badgeService = require('../utils/badgeService');
+    await badgeService.checkWaveChampion(user._id);
 
     res.status(200).json({
       success: true,

@@ -80,6 +80,14 @@ const gameStatsSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  currentGameStreak: {
+    type: Number,
+    default: 0,
+  },
+  maxGameStreak: {
+    type: Number,
+    default: 0,
+  },
   duelsToday: {
     type: Number,
     default: 0,

@@ -5,6 +5,14 @@ const gradePoints = { A: 5, B: 4, C: 3, D: 2, E: 1, F: 0 };
 // Create a new course performance record
 exports.createCourse = async (req, res) => {
   try {
+    // Validate user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+      });
+    }
+
     const { name, code, units, score, grade, semester } = req.body;
 
     if (!name || !code || !units || score === undefined || !grade) {
@@ -37,6 +45,14 @@ exports.createCourse = async (req, res) => {
       data: course,
     });
   } catch (error) {
+    // Handle duplicate key error specifically
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Duplicate entry. Please check if this course already exists or contact support if the issue persists.',
+      });
+    }
+    
     res.status(400).json({
       success: false,
       message: error.message,

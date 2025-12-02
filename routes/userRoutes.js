@@ -256,5 +256,93 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+// Dashboard routes
+const {
+  getDashboardStats,
+  getRecentActivities,
+  getQuickAccess,
+} = require('../controllers/dashboardController');
+
+router.get('/dashboard/stats', protect, getDashboardStats);
+router.get('/dashboard/activities', protect, getRecentActivities);
+router.get('/dashboard/quick-access', protect, getQuickAccess);
+
+// Track tool usage
+router.post('/track-tool', protect, async (req, res) => {
+  try {
+    const { toolId, toolName } = req.body;
+    const user = await User.findById(req.user._id);
+    
+    if (user) {
+      const today = new Date().toDateString();
+      const lastToolDate = user.lastToolUseDate ? new Date(user.lastToolUseDate).toDateString() : null;
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      // Update consecutive tool days
+      if (!lastToolDate) {
+        user.consecutiveToolDays = 1;
+      } else if (lastToolDate === yesterday.toDateString()) {
+        user.consecutiveToolDays = (user.consecutiveToolDays || 0) + 1;
+      } else if (lastToolDate !== today) {
+        user.consecutiveToolDays = 1;
+      }
+
+      user.lastToolUsed = {
+        toolId: toolId || 'unknown',
+        toolName: toolName || 'Unknown Tool',
+        usedAt: new Date(),
+      };
+      user.lastToolUseDate = new Date();
+      user.toolsUsedCount = (user.toolsUsedCount || 0) + 1;
+      await user.save({ validateBeforeSave: false });
+      
+      // Check badges
+      const badgeService = require('../utils/badgeService');
+      await badgeService.checkFirstStep(user._id);
+      await badgeService.checkDailyGrinder(user._id);
+      
+      // Track study planner or analytics usage
+      if (toolId === 'study-planner' || toolName === 'Study Planner') {
+        const lastPlannerDate = user.lastStudyPlannerDate ? new Date(user.lastStudyPlannerDate).toDateString() : null;
+        if (!lastPlannerDate) {
+          user.studyPlannerDays = 1;
+        } else if (lastPlannerDate === yesterday.toDateString()) {
+          user.studyPlannerDays = (user.studyPlannerDays || 0) + 1;
+        } else if (lastPlannerDate !== today) {
+          user.studyPlannerDays = 1;
+        }
+        user.lastStudyPlannerDate = new Date();
+        await user.save({ validateBeforeSave: false });
+        await badgeService.checkGoalSetter(user._id);
+      }
+      
+      if (toolId === 'progress-analytics' || toolName === 'Progress Analytics') {
+        const lastAnalyticsDate = user.lastAnalyticsDate ? new Date(user.lastAnalyticsDate).toDateString() : null;
+        if (!lastAnalyticsDate) {
+          user.analyticsDays = 1;
+        } else if (lastAnalyticsDate === yesterday.toDateString()) {
+          user.analyticsDays = (user.analyticsDays || 0) + 1;
+        } else if (lastAnalyticsDate !== today) {
+          user.analyticsDays = 1;
+        }
+        user.lastAnalyticsDate = new Date();
+        await user.save({ validateBeforeSave: false });
+        await badgeService.checkGoalSetter(user._id);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Tool usage tracked',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
 

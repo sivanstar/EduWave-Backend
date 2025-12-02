@@ -2,11 +2,7 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/eduwise', {
-      // These options are no longer needed in Mongoose 6+, but kept for older versions
-      // useNewUrlParser: true,
-      // useUnifiedTopology: true,
-    });
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/eduwise');
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     

@@ -92,6 +92,53 @@ const userSchema = new mongoose.Schema({
     type: String, // Format: "YYYY-MM"
   },
   coursesAccessed: [String],
+  loginStreak: {
+    type: Number,
+    default: 0,
+  },
+  lastLoginDate: {
+    type: Date,
+  },
+  lastToolUsed: {
+    toolId: String,
+    toolName: String,
+    usedAt: Date,
+  },
+  lastCourseOpened: {
+    courseId: String,
+    courseName: String,
+    openedAt: Date,
+  },
+  lastPostCreated: {
+    postId: String,
+    title: String,
+    createdAt: Date,
+  },
+  toolsUsedCount: {
+    type: Number,
+    default: 0,
+  },
+  consecutiveToolDays: {
+    type: Number,
+    default: 0,
+  },
+  lastToolUseDate: {
+    type: Date,
+  },
+  studyPlannerDays: {
+    type: Number,
+    default: 0,
+  },
+  analyticsDays: {
+    type: Number,
+    default: 0,
+  },
+  lastStudyPlannerDate: {
+    type: Date,
+  },
+  lastAnalyticsDate: {
+    type: Date,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

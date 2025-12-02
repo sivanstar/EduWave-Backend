@@ -127,6 +127,24 @@ exports.getCourseById = async (req, res) => {
       });
     }
 
+    // Track last course opened (if authenticated)
+    if (req.user) {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+      if (user) {
+        user.lastCourseOpened = {
+          courseId: course.courseId,
+          courseName: course.title,
+          openedAt: new Date(),
+        };
+        await user.save({ validateBeforeSave: false });
+        
+        // Check first step badge
+        const badgeService = require('../utils/badgeService');
+        await badgeService.checkFirstStep(user._id);
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: course,
