@@ -371,5 +371,70 @@ router.post('/track-tool', protect, async (req, res) => {
   }
 });
 
+// PUT update password - Users can update their own password
+router.put('/me/password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, passwordConfirm } = req.body;
+
+    // Validation
+    if (!currentPassword || !newPassword || !passwordConfirm) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide current password, new password, and password confirmation',
+      });
+    }
+
+    // Check if passwords match
+    if (newPassword !== passwordConfirm) {
+      return res.status(400).json({
+        success: false,
+        message: 'New passwords do not match',
+      });
+    }
+
+    // Check password length
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    // Find user with password field
+    const user = await User.findById(req.user._id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Verify current password
+    const isPasswordMatch = await user.matchPassword(currentPassword);
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully',
+    });
+  } catch (error) {
+    console.error('Update password error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error during password update',
+    });
+  }
+});
+
 module.exports = router;
 

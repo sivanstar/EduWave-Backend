@@ -343,6 +343,7 @@ exports.submitGameResult = async (req, res) => {
         },
       });
     }
+    
 
     // Update scores
     const isHost = duel.hostId.toString() === req.user._id.toString();
