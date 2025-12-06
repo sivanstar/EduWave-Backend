@@ -89,21 +89,23 @@ router.post('/upload', protect, upload.array('files', 10), async (req, res) => {
 // Public route - Get course by access code
 router.get('/access/:accessCode', getCourseByAccessCode);
 
-// Public route - Download course file (must come before /:courseId)
-router.get('/:courseId/files/:fileName', downloadFile);
-
-// Public route - Get course by ID
-router.get('/:courseId', getCourseById);
-
-// Protected routes
+// Protected routes - specific routes must come before parameterized routes
 router.post('/', protect, createCourse);
 router.post('/seed-default', protect, seedDefaultCourses);
 router.get('/my-courses', protect, getMyCourses);
 router.get('/all', protect, getAllCourses);
 router.get('/enrolled/my-courses', protect, getEnrolledCourses);
+
+// Public route - Download course file (must come before /:courseId)
+router.get('/:courseId/files/:fileName', downloadFile);
+
+// Protected routes with parameters
 router.put('/:courseId', protect, updateCourse);
 router.delete('/:courseId', protect, deleteCourse);
 router.post('/:courseId/enroll', protect, enrollInCourse);
+
+// Public route - Get course by ID (must be last to avoid matching specific routes)
+router.get('/:courseId', getCourseById);
 
 module.exports = router;
 
