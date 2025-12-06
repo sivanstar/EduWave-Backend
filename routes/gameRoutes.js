@@ -28,5 +28,8 @@ router.post('/duel/cancel', cancelDuel);
 // Submit game results
 router.post('/result', submitGameResult);
 
+// Generate questions
+router.get('/generate-questions', generateQuestions);
+
 module.exports = router;
 

@@ -412,9 +412,12 @@ exports.getAllCourses = async (req, res) => {
     const { category, difficulty, search } = req.query;
     const query = {};
 
-    // Filter by instructor if not admin
-    if (req.user.role !== 'admin') {
+    // For instructors, show only their courses. For students/admins, show all published courses
+    if (req.user.role === 'instructor') {
       query.instructor = req.user._id;
+    } else {
+      // For students and admins, show all published courses
+      query.isPublished = true;
     }
 
     if (category) {
@@ -432,15 +435,127 @@ exports.getAllCourses = async (req, res) => {
       ];
     }
 
+    // For students, include enrollment data. For instructors/admins, exclude it
+    const selectFields = req.user.role === 'student' 
+      ? '' // Include all fields including enrolledStudents for students
+      : '-enrolledStudents'; // Exclude for instructors/admins
+
     const courses = await Course.find(query)
       .sort({ createdAt: -1 })
       .populate('instructor', 'fullName email')
-      .select('-enrolledStudents');
+      .select(selectFields);
 
     res.status(200).json({
       success: true,
       count: courses.length,
       data: courses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Seed default courses (only for admin or system)
+exports.seedDefaultCourses = async (req, res) => {
+  try {
+    // Only allow admin or if no courses exist yet
+    const courseCount = await Course.countDocuments();
+    if (courseCount > 0 && req.user && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can seed courses when courses already exist',
+      });
+    }
+
+    const { courses } = req.body;
+
+    if (!courses || !Array.isArray(courses) || courses.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide an array of courses to seed',
+      });
+    }
+
+    // Get or create a system admin user for default courses
+    const User = require('../models/User');
+    let systemInstructor = await User.findOne({ role: 'admin' });
+    
+    if (!systemInstructor) {
+      // Create a system instructor if no admin exists
+      systemInstructor = await User.create({
+        fullName: 'EduWave System',
+        email: 'system@eduwave.com',
+        password: crypto.randomBytes(32).toString('hex'), // Random password
+        role: 'admin',
+        isEmailVerified: true,
+      });
+    }
+
+    const seededCourses = [];
+    const skippedCourses = [];
+
+    for (const courseData of courses) {
+      try {
+        // Check if course with this ID already exists
+        const existingCourse = await Course.findOne({ courseId: courseData.id });
+        
+        if (existingCourse) {
+          skippedCourses.push({
+            courseId: courseData.id,
+            title: courseData.title,
+            reason: 'Course already exists',
+          });
+          continue;
+        }
+
+        // Map frontend course structure to backend structure
+        const mappedCourse = {
+          courseId: courseData.id,
+          title: courseData.title,
+          instructorName: courseData.instructor || 'Curated by EduWave Team',
+          instructor: systemInstructor._id,
+          category: courseData.category,
+          description: courseData.description,
+          duration: courseData.duration || '',
+          videoUrl: courseData.videoUrl || '',
+          notes: courseData.notes || '',
+          icon: courseData.icon || '📚',
+          difficulty: courseData.difficulty || 'Beginner',
+          lessons: courseData.lessons || [],
+          totalLessons: courseData.totalLessons || (courseData.lessons?.length || 0),
+          objectives: courseData.objectives || [],
+          prerequisites: courseData.prerequisites || 'None',
+          contentType: courseData.contentType || 'curated',
+          attribution: courseData.attribution || '',
+          licenseType: courseData.licenseType || 'youtube-embed',
+          rating: courseData.rating || 0,
+          studentsEnrolled: courseData.studentsEnrolled || 0,
+          isPublished: true,
+        };
+
+        const course = await Course.create(mappedCourse);
+        seededCourses.push({
+          courseId: course.courseId,
+          title: course.title,
+        });
+      } catch (error) {
+        console.error(`Error seeding course ${courseData.id}:`, error);
+        skippedCourses.push({
+          courseId: courseData.id,
+          title: courseData.title,
+          reason: error.message,
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Seeded ${seededCourses.length} courses, skipped ${skippedCourses.length}`,
+      seeded: seededCourses,
+      skipped: skippedCourses,
     });
   } catch (error) {
     res.status(500).json({

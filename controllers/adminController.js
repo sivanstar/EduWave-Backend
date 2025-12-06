@@ -5,6 +5,7 @@ const { ProgressData } = require('../models/ProgressData');
 const PdfFile = require('../models/PdfFile');
 const Announcement = require('../models/Announcement');
 const AdminSettings = require('../models/AdminSettings');
+const ForumPost = require('../models/Forum');
 
 // Get overview statistics
 exports.getOverview = async (req, res) => {
@@ -18,13 +19,16 @@ exports.getOverview = async (req, res) => {
     const progressData = await ProgressData.countDocuments();
     const pdfFiles = await PdfFile.countDocuments();
     const toolUsage = studySessions + progressData + pdfFiles;
+    
+    // Count forum posts
+    const totalForumPosts = await ForumPost.countDocuments();
 
     res.status(200).json({
       success: true,
       data: {
         totalUsers,
         totalCourses,
-        totalForumPosts: 0, // Forum not implemented yet
+        totalForumPosts,
         toolUsage,
         premiumUsers,
       },
@@ -112,15 +116,42 @@ exports.getUserStats = async (req, res) => {
   }
 };
 
-// Get forum statistics (placeholder - forum not implemented)
+// Get forum statistics
 exports.getForumStats = async (req, res) => {
   try {
+    const totalPosts = await ForumPost.countDocuments();
+    const flaggedPosts = await ForumPost.countDocuments({ flagged: true });
+    
+    // Count total replies across all posts
+    const posts = await ForumPost.find().select('replies flagged');
+    const totalReplies = posts.reduce((sum, post) => sum + (post.replies?.length || 0), 0);
+    
+    // Get all posts with details for admin view
+    const allPosts = await ForumPost.find()
+      .populate('author', 'fullName email')
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
     res.status(200).json({
       success: true,
       data: {
-        totalReplies: 0,
-        flaggedPosts: 0,
-        topics: [],
+        totalReplies,
+        flaggedPosts,
+        totalPosts,
+        topics: allPosts.map(post => ({
+          _id: post._id,
+          id: post._id.toString(),
+          title: post.title,
+          author: post.authorName || (post.author?.fullName || 'Unknown'),
+          authorId: post.author?._id || post.author,
+          category: post.category,
+          replies: post.replies || [],
+          flagged: post.flagged || false,
+          helpfulVotes: post.helpfulVotes || 0,
+          createdAt: post.createdAt,
+          timestamp: post.createdAt,
+        })),
       },
     });
   } catch (error) {

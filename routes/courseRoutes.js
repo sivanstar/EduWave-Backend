@@ -15,6 +15,7 @@ const {
   updateCourse,
   deleteCourse,
   getAllCourses,
+  seedDefaultCourses,
 } = require('../controllers/courseController');
 
 // Ensure uploads directory exists
@@ -96,6 +97,7 @@ router.get('/:courseId', getCourseById);
 
 // Protected routes
 router.post('/', protect, createCourse);
+router.post('/seed-default', protect, seedDefaultCourses);
 router.get('/my-courses', protect, getMyCourses);
 router.get('/all', protect, getAllCourses);
 router.get('/enrolled/my-courses', protect, getEnrolledCourses);

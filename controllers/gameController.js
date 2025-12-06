@@ -1,6 +1,7 @@
 const { GameSession, GameStats } = require('../models/Game');
 const User = require('../models/User');
 const crypto = require('crypto');
+const axios = require('axios');
 
 // Generate unique duel key
 function generateDuelKey() {
@@ -660,6 +661,77 @@ const questionBank = {
   ],
 };
 
+// Helper function to get Open Trivia DB category ID
+function getCategoryId(category) {
+  const categories = {
+    'general': 9,    // General Knowledge
+    'science': 17,   // Science & Nature
+    'tech': 18,      // Science: Computers
+    'history': 23,   // History
+    'math': 19,      // Mathematics
+    'geography': 22, // Geography
+    'sports': 21,    // Sports
+    'movies': 11     // Films
+  };
+  return categories[category] || 9;
+}
+
+// Helper function to decode HTML entities
+function decodeHTML(html) {
+  if (!html) return '';
+  // Simple HTML entity decoding without external library
+  return html
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&apos;/g, "'");
+}
+
+// Helper function to shuffle array
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// Fetch questions from Open Trivia DB API
+async function fetchFromTriviaAPI(category, amount) {
+  try {
+    const categoryId = getCategoryId(category);
+    const url = `https://opentdb.com/api.php?amount=${amount}&category=${categoryId}&type=multiple`;
+    
+    const response = await axios.get(url, { timeout: 5000 });
+    
+    if (response.data.response_code !== 0) {
+      throw new Error('API response error');
+    }
+    
+    return response.data.results.map(q => {
+      // Combine all answers and shuffle them properly
+      const allAnswers = [...q.incorrect_answers, q.correct_answer];
+      const shuffledAnswers = shuffleArray(allAnswers);
+      
+      // Find the new position of the correct answer after shuffling
+      const correctIndex = shuffledAnswers.indexOf(q.correct_answer);
+      
+      return {
+        q: decodeHTML(q.question),
+        a: shuffledAnswers.map(a => decodeHTML(a)),
+        correct: correctIndex
+      };
+    });
+  } catch (error) {
+    console.error('Failed to fetch from Trivia API:', error.message);
+    throw error;
+  }
+}
+
 // Generate questions for a game
 exports.generateQuestions = async (req, res) => {
   try {
@@ -672,6 +744,27 @@ exports.generateQuestions = async (req, res) => {
       });
     }
 
+    const numQuestionsInt = parseInt(numQuestions);
+    
+    // Try Open Trivia DB API first
+    try {
+      const apiQuestions = await fetchFromTriviaAPI(topic, numQuestionsInt);
+      if (apiQuestions.length >= numQuestionsInt) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            questions: apiQuestions,
+            topic,
+            count: apiQuestions.length,
+            source: 'trivia_api'
+          },
+        });
+      }
+    } catch (error) {
+      console.log('Trivia API failed, falling back to local questions:', error.message);
+    }
+
+    // Fallback to local questions
     let pool = [];
     if (topic === 'mixed') {
       // Mix all categories
@@ -684,7 +777,7 @@ exports.generateQuestions = async (req, res) => {
 
     // Shuffle and select
     const shuffled = pool.sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, parseInt(numQuestions));
+    const selected = shuffled.slice(0, numQuestionsInt);
 
     res.status(200).json({
       success: true,
@@ -692,6 +785,7 @@ exports.generateQuestions = async (req, res) => {
         questions: selected,
         topic,
         count: selected.length,
+        source: 'local'
       },
     });
   } catch (error) {
