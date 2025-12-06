@@ -25,13 +25,8 @@ exports.createCourse = async (req, res) => {
       });
     }
 
-    // Check if user is instructor or admin
-    if (req.user.role !== 'instructor' && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only instructors and admins can create courses',
-      });
-    }
+    // Allow all authenticated users to create courses
+    // Students will have accessCode required, admins won't
 
     // Generate unique IDs
     let courseId = generateCourseId();
@@ -41,12 +36,20 @@ exports.createCourse = async (req, res) => {
       courseId = generateCourseId();
     }
 
-    // Generate access code only if not provided (for course-creator)
+    // Generate access code based on creator role:
+    // - Admin-created courses: No accessCode (accessible to all without code)
+    // - Student/Instructor-created courses: Always require accessCode
     let accessCode = req.body.accessCode;
-    if (!accessCode && req.body.generateAccessCode !== false) {
-      accessCode = generateAccessCode();
-      while (await Course.findOne({ accessCode })) {
+    if (req.user.role === 'admin') {
+      // Admin courses don't need accessCode - accessible to all
+      accessCode = null;
+    } else {
+      // Students/instructors always need accessCode
+      if (!accessCode && req.body.generateAccessCode !== false) {
         accessCode = generateAccessCode();
+        while (await Course.findOne({ accessCode })) {
+          accessCode = generateAccessCode();
+        }
       }
     }
 
@@ -63,7 +66,7 @@ exports.createCourse = async (req, res) => {
       files: req.body.files || [],
     };
 
-    // Add access code only if provided (for course-creator)
+    // Add access code only if provided (for student/instructor courses)
     if (accessCode) {
       courseData.accessCode = accessCode;
     }
@@ -117,7 +120,7 @@ exports.getMyCourses = async (req, res) => {
 exports.getCourseById = async (req, res) => {
   try {
     const course = await Course.findOne({ courseId: req.params.courseId })
-      .populate('instructor', 'fullName email')
+      .populate('instructor', 'fullName email role')
       .populate('enrolledStudents.userId', 'fullName email');
 
     if (!course) {
@@ -127,9 +130,46 @@ exports.getCourseById = async (req, res) => {
       });
     }
 
+    // Check access permissions:
+    // - Admins can access any course without accessCode
+    // - Admin-created courses are accessible to all without accessCode
+    // - Student/instructor-created courses require accessCode (unless user is admin)
+    const User = require('../models/User');
+    const isAdmin = req.user && req.user.role === 'admin';
+    
+    // Check if course creator is admin
+    let creatorIsAdmin = false;
+    const instructor = course.instructor;
+    
+    if (instructor && typeof instructor === 'object' && instructor.role) {
+      // Instructor is populated with user data
+      creatorIsAdmin = instructor.role === 'admin';
+    } else if (instructor) {
+      // If instructor is just an ID, fetch the user
+      const instructorUser = await User.findById(instructor);
+      creatorIsAdmin = instructorUser && instructorUser.role === 'admin';
+    }
+
+    // Access rules:
+    // 1. Admins can always access
+    // 2. Admin-created courses don't require accessCode (if course has no accessCode, it's admin-created)
+    // 3. Student/instructor-created courses require accessCode (unless user is admin)
+    const requiresAccessCode = !creatorIsAdmin && !isAdmin && course.accessCode;
+    
+    if (requiresAccessCode) {
+      // Check if accessCode was provided in query
+      const providedCode = req.query.accessCode || req.body.accessCode;
+      if (!providedCode || providedCode.toUpperCase() !== course.accessCode.toUpperCase()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access code required. Please provide a valid access code.',
+          requiresAccessCode: true,
+        });
+      }
+    }
+
     // Track last course opened (if authenticated)
     if (req.user) {
-      const User = require('../models/User');
       const user = await User.findById(req.user._id);
       if (user) {
         user.lastCourseOpened = {
