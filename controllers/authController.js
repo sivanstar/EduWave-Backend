@@ -59,44 +59,37 @@ exports.register = async (req, res) => {
     // Create verification URL
     const verificationUrl = `${req.protocol}://${req.get('host')}/auth/verify-email/${verificationToken}`;
 
-    // Send verification email
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: 'Email Verification - EduWise',
-        html: `
-          <h1>Welcome to EduWise!</h1>
-          <p>Please verify your email address by clicking the link below:</p>
-          <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
-          <p>Or copy and paste this URL into your browser:</p>
-          <p>${verificationUrl}</p>
-          <p>This link will expire in 24 hours.</p>
-          <p>If you did not create an account, please ignore this email.</p>
-        `,
-      });
+    // Send verification email (non-blocking - don't fail registration if email fails)
+    sendEmail({
+      email: user.email,
+      subject: 'Email Verification - EduWave',
+      html: `
+        <h1>Welcome to EduWave!</h1>
+        <p>Please verify your email address by clicking the link below:</p>
+        <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
+        <p>Or copy and paste this URL into your browser:</p>
+        <p>${verificationUrl}</p>
+        <p>This link will expire in 24 hours.</p>
+        <p>If you did not create an account, please ignore this email.</p>
+      `,
+    }).catch(error => {
+      // Log email error but don't block registration
+      console.error('Email sending failed (non-blocking):', error);
+    });
 
-      res.status(201).json({
-        success: true,
-        message: 'Registration successful! Please check your email to verify your account.',
-        data: {
-          user: {
-            id: user._id,
-            fullName: user.fullName,
-            email: user.email,
-            emailVerified: user.emailVerified,
-            role: user.role,
-          },
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful! Please check your email to verify your account.',
+      data: {
+        user: {
+          id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          emailVerified: user.emailVerified,
+          role: user.role,
         },
-      });
-    } catch (error) {
-      // If email fails, still create user but log error
-      console.error('Email sending failed:', error);
-      await User.findByIdAndDelete(user._id);
-      return res.status(500).json({
-        success: false,
-        message: 'Registration failed. Could not send verification email.',
-      });
-    }
+      },
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
