@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 const connectDB = require('./config/database');
 
@@ -53,7 +54,38 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve verification page from frontend directory
 app.get('/verify-email.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/verify-email.html'));
+  // Use path.resolve for more reliable absolute path resolution
+  // Try multiple possible paths to handle different deployment scenarios
+  const possiblePaths = [
+    path.resolve(__dirname, '../frontend/verify-email.html'),
+    path.resolve(__dirname, '../../frontend/verify-email.html'),
+    path.resolve(process.cwd(), 'frontend/verify-email.html'),
+    path.resolve(process.cwd(), '../frontend/verify-email.html'),
+  ];
+  
+  let filePath = null;
+  
+  // Find the first path that exists
+  for (const possiblePath of possiblePaths) {
+    try {
+      if (fs.existsSync(possiblePath)) {
+        filePath = possiblePath;
+        break;
+      }
+    } catch (err) {
+      // Continue to next path
+    }
+  }
+  
+  if (!filePath) {
+    console.error('verify-email.html not found. Tried paths:', possiblePaths);
+    return res.status(404).json({
+      success: false,
+      message: 'Verification page not found',
+    });
+  }
+  
+  res.sendFile(filePath);
 });
 
 // Connect to database
