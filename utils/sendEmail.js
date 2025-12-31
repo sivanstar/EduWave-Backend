@@ -24,8 +24,17 @@ const formatFromEmail = (email, name = 'EduWave') => {
     return `${name} <${email}>`;
   }
 
-  // Invalid format
-  throw new Error(`Invalid FROM_EMAIL format: ${email}. Must be a valid email address from your verified domain.`);
+  // Invalid format - looks like just a domain was provided
+  // Suggest the correct format
+  const suggestedEmail = email.includes('.') 
+    ? `noreply@${email}` 
+    : `noreply@${email}.com`;
+  throw new Error(
+    `Invalid FROM_EMAIL format: "${email}". ` +
+    `FROM_EMAIL must be a complete email address (e.g., noreply@eduwave.com.ng). ` +
+    `Did you mean: ${suggestedEmail}? ` +
+    `Please update your .env file: FROM_EMAIL=${suggestedEmail}`
+  );
 };
 
 const sendEmail = async (options) => {
