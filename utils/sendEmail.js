@@ -8,8 +8,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // Helper function to format the 'from' field correctly
 // Resend requires: "email@example.com" or "Name <email@example.com>"
 const formatFromEmail = (email, name = 'EduWave') => {
-  if (!email) {
-    return `${name} <onboarding@resend.dev>`;
+  if (!email || email.includes('onboarding@resend.dev')) {
+    const errorMsg = 'FROM_EMAIL not set or using default testing email. Please set FROM_EMAIL in your .env file to an email address from your verified domain (e.g., noreply@yourdomain.com).';
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   // If already in correct format (contains < and >), return as is
@@ -22,8 +24,8 @@ const formatFromEmail = (email, name = 'EduWave') => {
     return `${name} <${email}>`;
   }
 
-  // Fallback
-  return `${name} <onboarding@resend.dev>`;
+  // Invalid format
+  throw new Error(`Invalid FROM_EMAIL format: ${email}. Must be a valid email address from your verified domain.`);
 };
 
 const sendEmail = async (options) => {
@@ -51,9 +53,14 @@ const sendEmail = async (options) => {
       throw new Error('Email HTML content is required');
     }
 
-    // Format the 'from' field correctly
+    // Format the 'from' field correctly - must use verified domain
     const fromEmail = formatFromEmail(process.env.FROM_EMAIL, process.env.FROM_NAME || 'EduWave');
     console.log(`Using 'from' email: ${fromEmail}`);
+    
+    // Warn if using a domain that might not be verified
+    if (fromEmail.includes('@resend.dev')) {
+      console.warn('WARNING: Using @resend.dev domain. Make sure you have verified your own domain in Resend and set FROM_EMAIL to use that domain.');
+    }
 
     console.log(`Attempting to send email to: ${options.email}`);
     const { data, error } = await resend.emails.send({
