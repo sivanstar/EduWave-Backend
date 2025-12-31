@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - EduWave</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4A6CF7;
+            --secondary: #8B5CF6;
+            --accent: #2DD4BF;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg-light: #ffffff;
+            --bg-dark: #0f172a;
+            --text-light: #64748B;
+            --text-dark: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 50%, var(--secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .verification-container {
+            background: var(--bg-light);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .verification-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .verification-icon.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .verification-icon.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+
+        .verification-icon.loading {
+            background: rgba(74, 108, 247, 0.1);
+            color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        h1 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 14px 35px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 108, 247, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .verification-icon {
+            background: rgba(74, 108, 247, 0.1);
+            color: var(--primary);
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div id="initial-state">
+            <div class="verification-icon">
+                <i class="fas fa-envelope-open-text"></i>
+            </div>
+            <h1>Verify Your Email</h1>
+            <p>Click the button below to verify your email address and activate your account.</p>
+            <button id="verify-btn" class="btn" onclick="verifyEmail()">
+                <span id="btn-text">Verify Email</span>
+                <span id="btn-loading" class="hidden"><i class="fas fa-spinner fa-spin"></i> Verifying...</span>
+            </button>
+        </div>
+
+        <div id="loading-state" class="hidden">
+            <div class="verification-icon loading">
+                <i class="fas fa-spinner"></i>
+            </div>
+            <h1>Verifying Your Email</h1>
+            <p>Please wait while we verify your email address...</p>
+        </div>
+
+        <div id="success-state" class="hidden">
+            <div class="verification-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h1>Email Verified!</h1>
+            <p>Your email has been successfully verified. You can now log in to your account.</p>
+            <a href="auth.html?mode=signin" class="btn">Go to Login</a>
+        </div>
+
+        <div id="error-state" class="hidden">
+            <div class="verification-icon error">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <h1>Verification Failed</h1>
+            <div id="error-message" class="message error">
+                <p id="error-text"></p>
+            </div>
+            <a href="auth.html?mode=signin" class="btn">Go to Login</a>
+        </div>
+    </div>
+
+    <script>
+        async function verifyEmail() {
+            // Get token from URL query parameter or path
+            const urlParams = new URLSearchParams(window.location.search);
+            let token = urlParams.get('token');
+            
+            // If no token in query, try to get from path
+            if (!token) {
+                const path = window.location.pathname;
+                const tokenMatch = path.match(/\/verify-email\/([^\/]+)/);
+                token = tokenMatch ? tokenMatch[1] : null;
+            }
+
+            if (!token) {
+                showError('Verification token is missing from the URL.');
+                return;
+            }
+
+            // Show loading state
+            const verifyBtn = document.getElementById('verify-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnLoading = document.getElementById('btn-loading');
+            const initialState = document.getElementById('initial-state');
+            const loadingState = document.getElementById('loading-state');
+            
+            verifyBtn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+            initialState.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+
+            try {
+                // Call the API to verify email - use same detection logic as api-utils.js
+                const API_BASE_URL = (() => {
+                    if (window.API_BASE_URL) return window.API_BASE_URL;
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        return 'http://localhost:3000';
+                    }
+                    return 'https://eduwave-backend-4kcb.onrender.com';
+                })();
+                
+                const response = await fetch(`${API_BASE_URL}/auth/verify-email/${token}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showSuccess();
+                } else {
+                    showError(data.message || 'Verification failed. The link may be invalid or expired.');
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                showError('An error occurred while verifying your email. Please try again later.');
+            }
+        }
+
+        function showSuccess() {
+            document.getElementById('initial-state').classList.add('hidden');
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
+            document.getElementById('success-state').classList.remove('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('initial-state').classList.add('hidden');
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('success-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+            document.getElementById('error-text').textContent = message;
+        }
+    </script>
+</body>
+</html>
+

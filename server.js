@@ -52,15 +52,25 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve verification page from frontend directory
+// Serve verification page - check backend/public first, then frontend directory
 app.get('/verify-email.html', (req, res) => {
-  // Use path.resolve for more reliable absolute path resolution
   // Try multiple possible paths to handle different deployment scenarios
+  // Priority: backend/public (for Render/production) > frontend directory
   const possiblePaths = [
-    path.resolve(__dirname, '../frontend/verify-email.html'),
+    path.resolve(__dirname, 'public/verify-email.html'), // Backend public directory (for production)
+    path.join(__dirname, 'public', 'verify-email.html'), // Alternative path join
+    path.resolve(__dirname, '../frontend/verify-email.html'), // Frontend directory (for local dev)
     path.resolve(__dirname, '../../frontend/verify-email.html'),
+    path.resolve(process.cwd(), 'backend/public/verify-email.html'),
+    path.resolve(process.cwd(), 'public/verify-email.html'),
     path.resolve(process.cwd(), 'frontend/verify-email.html'),
     path.resolve(process.cwd(), '../frontend/verify-email.html'),
+    // Render-specific absolute paths (already absolute, don't resolve)
+    '/opt/render/project/src/backend/public/verify-email.html',
+    '/opt/render/project/backend/public/verify-email.html',
+    '/opt/render/project/public/verify-email.html',
+    path.resolve('/opt/render/project/src/backend/public/verify-email.html'),
+    path.resolve('/opt/render/project/backend/public/verify-email.html'),
   ];
   
   let filePath = null;
@@ -70,6 +80,7 @@ app.get('/verify-email.html', (req, res) => {
     try {
       if (fs.existsSync(possiblePath)) {
         filePath = possiblePath;
+        console.log(`Found verify-email.html at: ${filePath}`);
         break;
       }
     } catch (err) {
@@ -79,6 +90,8 @@ app.get('/verify-email.html', (req, res) => {
   
   if (!filePath) {
     console.error('verify-email.html not found. Tried paths:', possiblePaths);
+    console.error('Current __dirname:', __dirname);
+    console.error('Current process.cwd():', process.cwd());
     return res.status(404).json({
       success: false,
       message: 'Verification page not found',
