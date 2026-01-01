@@ -5,7 +5,6 @@ const User = require('../models/User');
 async function createNotificationForUser(userId, title, message, type = 'info', link = null) {
   try {
     if (!userId) {
-      console.error('Error creating notification: userId is required');
       return null;
     }
     
@@ -17,10 +16,8 @@ async function createNotificationForUser(userId, title, message, type = 'info', 
       link,
     });
     
-    console.log(`✅ Notification created for user ${userId}: ${title}`);
     return notification;
   } catch (error) {
-    console.error('Error creating notification:', error);
     return null;
   }
 }
@@ -29,8 +26,6 @@ async function createNotificationForUser(userId, title, message, type = 'info', 
 async function createNotificationForAllUsers(title, message, type = 'info', link = null) {
   try {
     const users = await User.find().select('_id');
-    console.log(`📢 Creating notifications for ${users.length} users: ${title}`);
-    
     const notifications = [];
     
     for (const user of users) {
@@ -40,10 +35,8 @@ async function createNotificationForAllUsers(title, message, type = 'info', link
       }
     }
     
-    console.log(`✅ Created ${notifications.length} notifications for all users`);
     return notifications;
   } catch (error) {
-    console.error('Error creating notifications for all users:', error);
     return [];
   }
 }
