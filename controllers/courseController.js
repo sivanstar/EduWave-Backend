@@ -163,7 +163,7 @@ exports.getCourseById = async (req, res) => {
       const instructorUser = await User.findById(course.instructor);
       creatorIsAdmin = instructorUser && instructorUser.role === 'admin';
     }
-    
+
     // Determine if access code is required
     // No access code needed if: user is admin, user is creator, or course has no access code (admin-created)
     const requiresAccessCode = course.accessCode && !isAdmin && !isCourseCreator && !creatorIsAdmin;
@@ -200,7 +200,7 @@ exports.getCourseById = async (req, res) => {
       }
     }
 
-    // Track last course opened (if authenticated)
+    // Track last course opened and auto-enroll (if authenticated and not creator)
     if (req.user) {
       const user = await User.findById(req.user._id);
       if (user) {
@@ -211,15 +211,36 @@ exports.getCourseById = async (req, res) => {
         };
         await user.save({ validateBeforeSave: false });
         
+        // Auto-enroll if not already enrolled and not the course creator
+        if (!isCourseCreator) {
+          const isEnrolled = course.enrolledStudents.some(
+            student => student.userId.toString() === req.user._id.toString()
+          );
+          
+          if (!isEnrolled) {
+            course.enrolledStudents.push({
+              userId: req.user._id,
+              enrolledAt: new Date(),
+              progress: 0,
+            });
+            await course.save();
+          }
+        }
+        
         // Check first step badge
         const badgeService = require('../utils/badgeService');
         await badgeService.checkFirstStep(user._id);
       }
     }
 
+    // Refresh course data with updated enrollment
+    const updatedCourse = await Course.findOne({ courseId: req.params.courseId })
+      .populate('instructor', 'fullName email role _id')
+      .populate('enrolledStudents.userId', 'fullName email');
+
     res.status(200).json({
       success: true,
-      data: course,
+      data: updatedCourse,
     });
   } catch (error) {
     res.status(500).json({
@@ -242,31 +263,64 @@ exports.getCourseByAccessCode = async (req, res) => {
       });
     }
 
-    // Notify course creator if course was accessed with accessCode (not public/admin course)
-    // Only notify if user is authenticated and not the course creator
-    if (req.user && course.instructor && course.accessCode) {
-      const instructorId = typeof course.instructor === 'object' ? course.instructor._id : course.instructor;
-      
-      if (instructorId.toString() !== req.user._id.toString()) {
-        const User = require('../models/User');
-        const { createNotificationForUser } = require('./notificationController');
-        const accessingUser = await User.findById(req.user._id);
+    // Track last course opened and auto-enroll (if authenticated and not creator)
+    if (req.user) {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+      if (user) {
+        user.lastCourseOpened = {
+          courseId: course.courseId,
+          courseName: course.title,
+          openedAt: new Date(),
+        };
+        await user.save({ validateBeforeSave: false });
         
-        if (accessingUser) {
+        // Check if user is course creator
+      const instructorId = typeof course.instructor === 'object' ? course.instructor._id : course.instructor;
+        const isCourseCreator = instructorId && instructorId.toString() === req.user._id.toString();
+        
+        // Auto-enroll if not already enrolled and not the course creator
+        if (!isCourseCreator) {
+          const isEnrolled = course.enrolledStudents.some(
+            student => student.userId.toString() === req.user._id.toString()
+          );
+          
+          if (!isEnrolled) {
+            course.enrolledStudents.push({
+              userId: req.user._id,
+              enrolledAt: new Date(),
+              progress: 0,
+            });
+            await course.save();
+          }
+        }
+        
+        // Notify course creator if course was accessed with accessCode (not public/admin course)
+        if (course.instructor && course.accessCode && !isCourseCreator) {
+          const { createNotificationForUser } = require('./notificationController');
           await createNotificationForUser(
             instructorId,
             'Course Accessed',
-            `${accessingUser.fullName} accessed your course "${course.title}" using access code`,
+            `${user.fullName} accessed your course "${course.title}" using access code`,
             'info',
             `/course-manager.html`
           );
         }
+        
+        // Check first step badge
+        const badgeService = require('../utils/badgeService');
+        await badgeService.checkFirstStep(user._id);
       }
     }
 
+    // Refresh course data with updated enrollment
+    const updatedCourse = await Course.findOne({ accessCode: req.params.accessCode.toUpperCase() })
+      .populate('instructor', 'fullName email')
+      .populate('enrolledStudents.userId', 'fullName email');
+
     res.status(200).json({
       success: true,
-      data: course,
+      data: updatedCourse,
     });
   } catch (error) {
     res.status(500).json({
