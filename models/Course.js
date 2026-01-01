@@ -51,12 +51,27 @@ const courseSchema = new mongoose.Schema({
     uppercase: true,
     trim: true,
   },
-  files: [{
-    name: String,
-    path: String,
-    size: Number,
-    type: String,
-  }],
+  files: {
+    type: [{
+      name: {
+        type: String,
+        required: true,
+      },
+      path: {
+        type: String,
+        required: true,
+      },
+      size: {
+        type: Number,
+        default: 0,
+      },
+      type: {
+        type: String,
+        default: '',
+      },
+    }],
+    default: [],
+  },
   // Course Manager fields
   icon: {
     type: String,

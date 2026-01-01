@@ -53,6 +53,17 @@ exports.createCourse = async (req, res) => {
       }
     }
 
+    // Validate and format files array
+    let files = [];
+    if (req.body.files && Array.isArray(req.body.files)) {
+      files = req.body.files.map(file => ({
+        name: file.name || '',
+        path: file.path || '',
+        size: typeof file.size === 'number' ? file.size : 0,
+        type: file.type || '',
+      })).filter(file => file.name && file.path); // Only include files with name and path
+    }
+
     const courseData = {
       courseId,
       title,
@@ -63,7 +74,7 @@ exports.createCourse = async (req, res) => {
       duration: duration || '',
       videoUrl: videoUrl || '',
       notes: notes || '',
-      files: req.body.files || [],
+      files: files,
     };
 
     // Add access code only if provided (for student/instructor courses)
