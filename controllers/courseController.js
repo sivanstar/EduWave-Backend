@@ -562,13 +562,9 @@ exports.getAllCourses = async (req, res) => {
     const { category, difficulty, search } = req.query;
     const query = {};
 
-    // For instructors, show only their courses. For students/admins, show all courses (published or not)
-    if (req.user.role === 'instructor') {
-      query.instructor = req.user._id;
-    } else {
-      // For students and admins, show all courses (don't filter by isPublished)
-      // Courses will be filtered on frontend by admin/premium instructor
-    }
+    // For students/admins, show all courses (don't filter by isPublished)
+    // Courses will be filtered on frontend by admin instructor
+    // Note: There are only 'user' and 'admin' roles, so 'instructor' check is not needed
 
     if (category) {
       query.category = category;
