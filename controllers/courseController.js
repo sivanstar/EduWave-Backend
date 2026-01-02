@@ -170,9 +170,11 @@ exports.getCourseById = async (req, res) => {
     let accessCodeUsed = false;
     
     if (requiresAccessCode) {
-      // Check if accessCode was provided in query
-      const providedCode = req.query.accessCode || req.body.accessCode;
-      if (!providedCode || providedCode.toUpperCase() !== course.accessCode.toUpperCase()) {
+      // Check if accessCode was provided in query or body
+      const providedCode = (req.query.accessCode || req.body.accessCode || '').trim().toUpperCase();
+      const courseAccessCode = (course.accessCode || '').trim().toUpperCase();
+      
+      if (!providedCode || providedCode !== courseAccessCode) {
         return res.status(403).json({
           success: false,
           message: 'Access code required. Please provide a valid access code.',
