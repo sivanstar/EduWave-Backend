@@ -749,40 +749,85 @@ exports.assignCoursesToAdmin = async (req, res) => {
     const coursesWithNonAdminInstructor = [];
     
     for (const course of allCourses) {
-      if (!course.instructor || course.instructor === null) {
-        // Course has no instructor (null ObjectId or populated result is null)
+      // Check if instructor is null after population (could be invalid ObjectId or actually null)
+      const hasInstructor = course.instructor && 
+                           course.instructor !== null && 
+                           typeof course.instructor === 'object' && 
+                           course.instructor._id;
+      
+      if (!hasInstructor) {
+        // Course has no instructor (null ObjectId, invalid ObjectId, or populated result is null)
         coursesWithoutInstructor.push(course._id);
-      } else if (course.instructor.role !== 'admin') {
+        console.log(`Course without instructor: ${course.courseId || course.title}`);
+      } else if (course.instructor.role && course.instructor.role !== 'admin') {
         // Course has instructor but it's not an admin
         coursesWithNonAdminInstructor.push(course._id);
+        console.log(`Course with non-admin instructor: ${course.courseId || course.title}, role: ${course.instructor.role}`);
       }
     }
 
+    console.log(`Found ${coursesWithoutInstructor.length} courses without instructor`);
+    console.log(`Found ${coursesWithNonAdminInstructor.length} courses with non-admin instructor`);
+
     // Update all courses without instructors to assign them to admin
-    const updateResult1 = coursesWithoutInstructor.length > 0 ? await Course.updateMany(
-      {
-        _id: { $in: coursesWithoutInstructor }
-      },
-      {
-        $set: {
-          instructor: adminUser._id,
-          instructorName: adminUser.fullName || 'EduWave System'
+    let updateResult1 = { modifiedCount: 0, matchedCount: 0 };
+    if (coursesWithoutInstructor.length > 0) {
+      // Update using updateMany - this should work for courses with null or invalid instructor ObjectIds
+      updateResult1 = await Course.updateMany(
+        {
+          _id: { $in: coursesWithoutInstructor }
+        },
+        {
+          $set: {
+            instructor: adminUser._id,
+            instructorName: adminUser.fullName || 'EduWave System'
+          }
         }
+      );
+      console.log(`Updated ${updateResult1.modifiedCount} courses without instructor (matched: ${updateResult1.matchedCount})`);
+      
+      // If updateMany didn't work, try updating individually
+      if (updateResult1.modifiedCount === 0 && coursesWithoutInstructor.length > 0) {
+        console.log('updateMany returned 0, trying individual updates...');
+        let individualUpdates = 0;
+        for (const courseId of coursesWithoutInstructor) {
+          try {
+            const result = await Course.findByIdAndUpdate(
+              courseId,
+              {
+                $set: {
+                  instructor: adminUser._id,
+                  instructorName: adminUser.fullName || 'EduWave System'
+                }
+              },
+              { new: true }
+            );
+            if (result) individualUpdates++;
+          } catch (err) {
+            console.error(`Error updating course ${courseId}:`, err.message);
+          }
+        }
+        updateResult1.modifiedCount = individualUpdates;
+        console.log(`Updated ${individualUpdates} courses individually`);
       }
-    ) : { modifiedCount: 0 };
+    }
 
     // Update all courses with non-admin instructors to assign them to admin
-    const updateResult2 = coursesWithNonAdminInstructor.length > 0 ? await Course.updateMany(
-      {
-        _id: { $in: coursesWithNonAdminInstructor }
-      },
-      {
-        $set: {
-          instructor: adminUser._id,
-          instructorName: adminUser.fullName || 'EduWave System'
+    let updateResult2 = { modifiedCount: 0 };
+    if (coursesWithNonAdminInstructor.length > 0) {
+      updateResult2 = await Course.updateMany(
+        {
+          _id: { $in: coursesWithNonAdminInstructor }
+        },
+        {
+          $set: {
+            instructor: adminUser._id,
+            instructorName: adminUser.fullName || 'EduWave System'
+          }
         }
-      }
-    ) : { modifiedCount: 0 };
+      );
+      console.log(`Updated ${updateResult2.modifiedCount} courses with non-admin instructor`);
+    }
 
     const totalUpdated = updateResult1.modifiedCount + updateResult2.modifiedCount;
 
