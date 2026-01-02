@@ -562,12 +562,12 @@ exports.getAllCourses = async (req, res) => {
     const { category, difficulty, search } = req.query;
     const query = {};
 
-    // For instructors, show only their courses. For students/admins, show all published courses
+    // For instructors, show only their courses. For students/admins, show all courses (published or not)
     if (req.user.role === 'instructor') {
       query.instructor = req.user._id;
     } else {
-      // For students and admins, show all published courses
-      query.isPublished = true;
+      // For students and admins, show all courses (don't filter by isPublished)
+      // Courses will be filtered on frontend by admin/premium instructor
     }
 
     if (category) {
@@ -592,7 +592,7 @@ exports.getAllCourses = async (req, res) => {
 
     const courses = await Course.find(query)
       .sort({ createdAt: -1 })
-      .populate('instructor', 'fullName email')
+      .populate('instructor', 'fullName email role _id isPro')
       .select(selectFields);
 
     res.status(200).json({
