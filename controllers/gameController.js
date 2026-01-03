@@ -126,10 +126,10 @@ exports.joinDuel = async (req, res) => {
       });
     }
 
-    // Prevent host from joining their own duel - check first
+    // Check if duel exists and get full details
     const initialCheck = await GameSession.findOne({ 
       duelKey: duelKey.toUpperCase() 
-    }).select('hostId status expiresAt').lean();
+    }).select('hostId opponentId status expiresAt topic numQuestions hostName opponentName').lean();
 
     if (!initialCheck) {
       return res.status(404).json({
@@ -138,8 +138,27 @@ exports.joinDuel = async (req, res) => {
       });
     }
 
-    // Check if host is trying to join their own duel
-    if (initialCheck.hostId.toString() === req.user._id.toString()) {
+    const userId = req.user._id.toString();
+    const isHost = initialCheck.hostId.toString() === userId;
+    const isOpponent = initialCheck.opponentId && initialCheck.opponentId.toString() === userId;
+
+    // Allow rejoining if user is already the opponent or host
+    if (isOpponent) {
+      // User is already the opponent - allow rejoin
+      return res.status(200).json({
+        success: true,
+        data: {
+          duelKey: initialCheck.duelKey || duelKey.toUpperCase(),
+          topic: initialCheck.topic,
+          numQuestions: initialCheck.numQuestions,
+          hostName: initialCheck.hostName,
+          rejoin: true, // Flag to indicate this is a rejoin
+        },
+      });
+    }
+
+    // Prevent host from joining their own duel as opponent (unless they're rejoining)
+    if (isHost) {
       return res.status(400).json({
         success: false,
         message: 'You cannot join your own duel',
@@ -194,6 +213,21 @@ exports.joinDuel = async (req, res) => {
         return res.status(404).json({
           success: false,
           message: 'Duel not found',
+        });
+      }
+      
+      // Check if user is already the opponent (rejoin scenario)
+      if (currentDuel.opponentId && currentDuel.opponentId.toString() === req.user._id.toString()) {
+        // User is already the opponent - allow rejoin
+        return res.status(200).json({
+          success: true,
+          data: {
+            duelKey: currentDuel.duelKey,
+            topic: currentDuel.topic,
+            numQuestions: currentDuel.numQuestions,
+            hostName: currentDuel.hostName,
+            rejoin: true, // Flag to indicate this is a rejoin
+          },
         });
       }
       
