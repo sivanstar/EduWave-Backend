@@ -191,22 +191,27 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Update login streak (24-hour check instead of day-based)
+    // Update login streak (day-based, not 24-hour window)
     const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const lastLoginDate = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
+    const lastLoginDay = lastLoginDate ? new Date(lastLoginDate.getFullYear(), lastLoginDate.getMonth(), lastLoginDate.getDate()) : null;
 
-    if (!lastLoginDate) {
+    if (!lastLoginDate || !lastLoginDay) {
       // First login
       user.loginStreak = 1;
     } else {
-      // Calculate hours since last login
-      const hoursSinceLastLogin = (now - lastLoginDate) / (1000 * 60 * 60);
+      // Calculate days difference
+      const daysDiff = Math.floor((today - lastLoginDay) / (1000 * 60 * 60 * 24));
       
-      if (hoursSinceLastLogin <= 24) {
-        // Logged in within 24 hours - increment streak
+      if (daysDiff === 0) {
+        // Logged in on the same day - don't increment streak (already counted today)
+        // Keep current streak
+      } else if (daysDiff === 1) {
+        // Logged in on consecutive day - increment streak
         user.loginStreak = (user.loginStreak || 0) + 1;
       } else {
-        // More than 24 hours passed - streak broken, reset to 1
+        // More than 1 day passed - streak broken, reset to 1
         user.loginStreak = 1;
       }
     }
