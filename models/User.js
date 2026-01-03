@@ -168,6 +168,14 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+// Add database indexes for frequently queried fields (CRITICAL for performance)
+userSchema.index({ email: 1 }); // Already unique, but explicit index helps
+userSchema.index({ points: -1 }); // For leaderboard queries
+userSchema.index({ 'forumStats.helpfulVotes': -1 }); // For forum leaderboard
+userSchema.index({ loginStreak: -1 }); // For streak queries
+userSchema.index({ createdAt: -1 }); // For sorting users by join date
+userSchema.index({ isPro: 1, trialExpired: 1 }); // For premium queries
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {

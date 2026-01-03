@@ -114,6 +114,13 @@ forumPostSchema.pre('save', function(next) {
   next();
 });
 
+// Add database indexes for frequently queried fields (CRITICAL for performance)
+forumPostSchema.index({ category: 1, createdAt: -1 }); // For category filtering and sorting
+forumPostSchema.index({ author: 1 }); // For finding posts by author
+forumPostSchema.index({ createdAt: -1 }); // For sorting by date
+forumPostSchema.index({ 'forumStats.helpfulVotes': -1 }); // For leaderboard queries
+forumPostSchema.index({ flagged: 1 }); // For filtering flagged posts
+
 const ForumPost = mongoose.model('ForumPost', forumPostSchema);
 
 module.exports = ForumPost;

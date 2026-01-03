@@ -11,16 +11,17 @@ exports.getLeaderboard = async (req, res) => {
     const limitNum = Math.min(parseInt(limit) || 20, 100); // Max 100 users
     const offsetNum = Math.max(parseInt(offset) || 0, 0);
 
-    // Build query
-    let query = User.find().select('fullName email points createdAt badges');
+    // Build query with optimized select (only needed fields)
+    let query = User.find().select('fullName email points createdAt badges').lean();
     
     // Sort by points descending, then by createdAt ascending (earlier users rank higher if tied)
+    // Using lean() for better performance (returns plain JS objects)
     query = query.sort({ points: -1, createdAt: 1 });
     
     // Apply pagination
     query = query.skip(offsetNum).limit(limitNum);
     
-    const users = await query.lean();
+    const users = await query;
 
     // Calculate total users for pagination
     const totalUsers = await User.countDocuments();

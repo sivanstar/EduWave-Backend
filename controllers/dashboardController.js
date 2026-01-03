@@ -5,10 +5,15 @@ const ForumPost = require('../models/Forum');
 // Get dashboard stats
 exports.getDashboardStats = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    // Only select needed fields for better performance
+    const user = await User.findById(req.user._id)
+      .select('badges toolsUsed toolsUsedCount forumStats')
+      .lean();
     
-    // Count completed lessons
-    const progressRecords = await CourseProgress.find({ user: req.user._id });
+    // Count completed lessons (optimized with lean and select)
+    const progressRecords = await CourseProgress.find({ user: req.user._id })
+      .select('lessons')
+      .lean();
     const lessonsCompleted = progressRecords.reduce((total, progress) => {
       return total + (progress.lessons?.filter(l => l.completed).length || 0);
     }, 0);
@@ -47,7 +52,10 @@ exports.getDashboardStats = async (req, res) => {
 // Get recent activities
 exports.getRecentActivities = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    // Only select needed fields for better performance
+    const user = await User.findById(req.user._id)
+      .select('lastToolUsed lastCourseOpened lastPostCreated')
+      .lean();
     const activities = [];
 
     // Last tool used
@@ -77,11 +85,12 @@ exports.getRecentActivities = async (req, res) => {
       });
     }
 
-    // Get recent forum posts
+    // Get recent forum posts (optimized with lean)
     const recentPosts = await ForumPost.find({ author: req.user._id })
       .sort({ createdAt: -1 })
       .limit(2)
-      .select('title createdAt');
+      .select('title createdAt')
+      .lean();
 
     recentPosts.forEach(post => {
       activities.push({
@@ -110,7 +119,10 @@ exports.getRecentActivities = async (req, res) => {
 // Get quick access (last tool, course, post)
 exports.getQuickAccess = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    // Only select needed fields for better performance
+    const user = await User.findById(req.user._id)
+      .select('lastToolUsed lastCourseOpened lastPostCreated')
+      .lean();
     
     const quickAccess = {
       lastTool: user.lastToolUsed || null,

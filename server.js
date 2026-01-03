@@ -2,10 +2,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression');
 require('dotenv').config();
 const connectDB = require('./config/database');
 
 const app = express();
+
+// Enable response compression (gzip) for all responses - reduces data transfer by 70-90%
+app.use(compression());
 
 // CORS middleware - Environment-aware for Vercel/production
 app.use((req, res, next) => {
@@ -49,6 +53,19 @@ app.use((req, res, next) => {
 // Increase body size limit to handle base64 image uploads (10MB)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Add cache headers for better performance
+app.use((req, res, next) => {
+  // Cache static assets for 1 year
+  if (req.path.startsWith('/uploads/') || req.path.match(/\.(jpg|jpeg|png|gif|ico|css|js|woff|woff2|ttf|eot|svg)$/)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+  // Cache API GET responses for 30 seconds (helps with repeated requests)
+  else if (req.method === 'GET' && req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'private, max-age=30');
+  }
+  next();
+});
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

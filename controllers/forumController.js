@@ -26,22 +26,32 @@ async function checkUserPremium(user, settings) {
 // Get all posts (with optional category filter)
 exports.getPosts = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, limit = 50, skip = 0 } = req.query;
     const query = {};
 
     if (category) {
       query.category = category;
     }
 
+    // Add pagination to limit data transfer and improve performance
+    const limitNum = Math.min(parseInt(limit) || 50, 100); // Max 100 posts per request
+    const skipNum = parseInt(skip) || 0;
+
     const posts = await ForumPost.find(query)
       .populate('author', 'fullName email')
       .sort({ createdAt: -1 })
-      .lean();
+      .limit(limitNum)
+      .skip(skipNum)
+      .lean(); // Use lean() for better performance
+
+    // Get total count for pagination (only if needed)
+    const total = skipNum === 0 ? await ForumPost.countDocuments(query) : null;
 
     res.status(200).json({
       success: true,
       count: posts.length,
       data: posts,
+      ...(total !== null && { total, hasMore: skipNum + posts.length < total })
     });
   } catch (error) {
     res.status(500).json({

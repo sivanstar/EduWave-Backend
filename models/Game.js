@@ -113,6 +113,15 @@ gameStatsSchema.pre('save', function(next) {
   next();
 });
 
+// Add database indexes for frequently queried fields (CRITICAL for performance)
+gameSessionSchema.index({ duelKey: 1 }); // Already unique, but explicit index
+gameSessionSchema.index({ status: 1, createdAt: -1 }); // For finding active duels
+gameSessionSchema.index({ hostId: 1 }); // For finding duels by host
+gameSessionSchema.index({ opponentId: 1 }); // For finding duels by opponent
+gameSessionSchema.index({ expiresAt: 1 }); // For finding expired duels
+gameStatsSchema.index({ user: 1 }); // Already unique, but explicit index
+gameStatsSchema.index({ gamesWon: -1 }); // For leaderboard queries
+
 const GameSession = mongoose.model('GameSession', gameSessionSchema);
 const GameStats = mongoose.model('GameStats', gameStatsSchema);
 
