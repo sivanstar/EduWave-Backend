@@ -168,7 +168,7 @@ exports.completeLesson = async (req, res) => {
       // Award points for course completion
       const user = await User.findById(req.user._id);
       if (user) {
-        user.points = (user.points || 0) + 20; // Course completion points
+        user.points = Math.round((user.points || 0) + 20); // Course completion points
         await user.save();
         
         // Check badges

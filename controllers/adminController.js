@@ -44,7 +44,7 @@ exports.getOverview = async (req, res) => {
 // Get course statistics
 exports.getCourseStats = async (req, res) => {
   try {
-    const courses = await Course.find().select('category totalLessons');
+    const courses = await Course.find().select('category totalLessons').lean();
     
     const stats = {
       programming: 0,
@@ -119,19 +119,23 @@ exports.getUserStats = async (req, res) => {
 // Get forum statistics
 exports.getForumStats = async (req, res) => {
   try {
-    const totalPosts = await ForumPost.countDocuments();
-    const flaggedPosts = await ForumPost.countDocuments({ flagged: true });
+    // Use parallel queries for better performance
+    const [totalPosts, flaggedPosts, totalRepliesResult, allPosts] = await Promise.all([
+      ForumPost.countDocuments(),
+      ForumPost.countDocuments({ flagged: true }),
+      // Use aggregation to count replies efficiently instead of fetching all posts
+      ForumPost.aggregate([
+        { $project: { repliesCount: { $size: { $ifNull: ['$replies', []] } } } },
+        { $group: { _id: null, total: { $sum: '$repliesCount' } } }
+      ]),
+      ForumPost.find()
+        .populate('author', 'fullName email')
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean()
+    ]);
     
-    // Count total replies across all posts
-    const posts = await ForumPost.find().select('replies flagged');
-    const totalReplies = posts.reduce((sum, post) => sum + (post.replies?.length || 0), 0);
-    
-    // Get all posts with details for admin view
-    const allPosts = await ForumPost.find()
-      .populate('author', 'fullName email')
-      .sort({ createdAt: -1 })
-      .limit(100)
-      .lean();
+    const totalReplies = totalRepliesResult[0]?.total || 0;
 
     res.status(200).json({
       success: true,

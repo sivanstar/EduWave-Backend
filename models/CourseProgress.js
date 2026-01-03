@@ -69,6 +69,8 @@ const courseProgressSchema = new mongoose.Schema({
 });
 
 courseProgressSchema.index({ user: 1, courseId: 1 }, { unique: true });
+courseProgressSchema.index({ user: 1, lastAccessedAt: -1 }); // For sorting user's courses
+courseProgressSchema.index({ course: 1 }); // For finding progress by course
 courseProgressSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();

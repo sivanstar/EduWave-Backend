@@ -30,7 +30,7 @@ exports.getLeaderboard = async (req, res) => {
     const leaderboard = [];
     for (let i = 0; i < users.length; i++) {
       const user = users[i];
-      const userPoints = user.points || 0;
+      const userPoints = Math.round(user.points || 0);
       const rank = offsetNum + i + 1;
 
       const leaderboardEntry = {
@@ -60,7 +60,7 @@ exports.getLeaderboard = async (req, res) => {
     if (req.user) {
       const currentUser = await User.findById(req.user._id).select('points');
       if (currentUser) {
-        currentUserPoints = currentUser.points || 0;
+        currentUserPoints = Math.round(currentUser.points || 0);
         const usersAbove = await User.countDocuments({
           $or: [
             { points: { $gt: currentUserPoints } },
@@ -118,7 +118,7 @@ exports.getUserBadges = async (req, res) => {
       success: true,
       data: {
         badges: updatedUser.badges || { achievement: [], point: [] },
-        points: updatedUser.points || 0,
+        points: Math.round(updatedUser.points || 0),
         badgeDefinitions: {
           achievement: badgeService.ACHIEVEMENT_BADGES,
           point: badgeService.POINT_BADGES,
@@ -215,7 +215,7 @@ exports.getUserRank = async (req, res) => {
       });
     }
 
-    const userPoints = user.points || 0;
+    const userPoints = Math.round(user.points || 0);
     
     // Count users above (higher points OR same points but earlier registration)
     const usersAbove = await User.countDocuments({

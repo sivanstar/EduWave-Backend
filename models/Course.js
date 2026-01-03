@@ -154,5 +154,12 @@ courseSchema.pre('save', function(next) {
   next();
 });
 
+// Add database indexes for frequently queried fields (CRITICAL for performance)
+courseSchema.index({ category: 1, createdAt: -1 }); // For category filtering and sorting
+courseSchema.index({ difficulty: 1 }); // For difficulty filtering
+courseSchema.index({ instructor: 1 }); // For finding courses by instructor
+courseSchema.index({ isPublished: 1 }); // For filtering published courses
+courseSchema.index({ createdAt: -1 }); // For sorting by date
+
 module.exports = mongoose.model('Course', courseSchema);
 

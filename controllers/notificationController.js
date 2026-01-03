@@ -25,7 +25,7 @@ async function createNotificationForUser(userId, title, message, type = 'info', 
 // Helper function to create notifications for all users
 async function createNotificationForAllUsers(title, message, type = 'info', link = null) {
   try {
-    const users = await User.find().select('_id');
+    const users = await User.find().select('_id').lean();
     const notifications = [];
     
     for (const user of users) {

@@ -6,12 +6,16 @@ const { protect, authorize } = require('../middleware/auth');
 // GET current user profile - All authenticated users
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password -refreshToken -emailVerificationToken');
+    const user = await User.findById(req.user._id).select('-password -refreshToken -emailVerificationToken').lean();
     if (!user) {
       return res.status(404).json({ 
         success: false,
         message: 'User not found' 
       });
+    }
+    // Ensure points are always whole numbers
+    if (user.points !== undefined && user.points !== null) {
+      user.points = Math.round(user.points);
     }
     res.json({
       success: true,
@@ -28,7 +32,13 @@ router.get('/me', protect, async (req, res) => {
 // GET all users - Admin and Instructor can view all users
 router.get('/', protect, authorize('admin', 'instructor'), async (req, res) => {
   try {
-    const users = await User.find().select('-password -refreshToken -emailVerificationToken');
+    const users = await User.find().select('-password -refreshToken -emailVerificationToken').lean();
+    // Ensure points are always whole numbers
+    users.forEach(user => {
+      if (user.points !== undefined && user.points !== null) {
+        user.points = Math.round(user.points);
+      }
+    });
     res.json({
       success: true,
       count: users.length,
@@ -45,12 +55,16 @@ router.get('/', protect, authorize('admin', 'instructor'), async (req, res) => {
 // GET a single user by ID - Users can view their own profile, admins and instructors can view any
 router.get('/:id', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password -refreshToken -emailVerificationToken');
+    const user = await User.findById(req.params.id).select('-password -refreshToken -emailVerificationToken').lean();
     if (!user) {
       return res.status(404).json({ 
         success: false,
         message: 'User not found' 
       });
+    }
+    // Ensure points are always whole numbers
+    if (user.points !== undefined && user.points !== null) {
+      user.points = Math.round(user.points);
     }
     
     // Users can only view their own profile unless they're admin or instructor

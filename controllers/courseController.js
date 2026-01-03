@@ -589,7 +589,8 @@ exports.getAllCourses = async (req, res) => {
     const courses = await Course.find(query)
       .sort({ createdAt: -1 })
       .populate('instructor', 'fullName email role _id isPro')
-      .select(selectFields);
+      .select(selectFields)
+      .lean(); // Use lean() for better performance
 
     res.status(200).json({
       success: true,
