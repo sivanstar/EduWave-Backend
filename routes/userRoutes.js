@@ -357,7 +357,7 @@ router.post('/track-tool', protect, async (req, res) => {
 
     // Award points only if 24 hours have passed since last award for this tool
     if (canAwardPoints) {
-      user.points = (user.points || 0) + 1;
+      user.points = Math.round((user.points || 0) + 1);
       pointsAwarded = 1;
     }
 

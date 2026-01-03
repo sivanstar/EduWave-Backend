@@ -133,7 +133,7 @@ exports.completeLesson = async (req, res) => {
       // Award points for lesson completion (only if 50% watched)
       const user = await User.findById(req.user._id);
       if (user) {
-        user.points = (user.points || 0) + 5; // Lesson completion points
+        user.points = Math.round((user.points || 0) + 5); // Lesson completion points
         await user.save();
         pointsAwarded = 5;
         

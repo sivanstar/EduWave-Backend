@@ -176,13 +176,22 @@ userSchema.index({ loginStreak: -1 }); // For streak queries
 userSchema.index({ createdAt: -1 }); // For sorting users by join date
 userSchema.index({ isPro: 1, trialExpired: 1 }); // For premium queries
 
+// Ensure points are always whole numbers (integers)
+userSchema.pre('save', function(next) {
+  if (this.points !== undefined && this.points !== null) {
+    this.points = Math.round(this.points);
+  }
+  next();
+});
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // Compare password method

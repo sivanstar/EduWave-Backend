@@ -179,7 +179,7 @@ exports.updateUserPoints = async (req, res) => {
     if (points !== undefined) {
       const delta = parseInt(points, 10);
       if (!Number.isNaN(delta) && delta !== 0) {
-        user.points = (user.points || 0) + delta;
+        user.points = Math.round((user.points || 0) + delta);
         await user.save();
         
         // Check badges when points change

@@ -263,7 +263,7 @@ exports.addReply = async (req, res) => {
     if (post.author.toString() !== req.user._id.toString()) {
       const postAuthor = await User.findById(post.author);
       if (postAuthor) {
-        postAuthor.points = (postAuthor.points || 0) + 1;
+        postAuthor.points = Math.round((postAuthor.points || 0) + 1);
         await postAuthor.save();
         
         // Check trending badge (100 replies)
@@ -358,11 +358,11 @@ exports.votePost = async (req, res) => {
       post.votedBy = post.votedBy.filter(id => id.toString() !== userId.toString());
       post.helpfulVotes = Math.max(0, post.helpfulVotes - 1);
 
-      // Update author's helpful votes and remove 0.2 points
+      // Update author's helpful votes and remove 1 point
       const author = await User.findById(post.author);
       if (author && author.forumStats) {
         author.forumStats.helpfulVotes = Math.max(0, (author.forumStats.helpfulVotes || 0) - 1);
-        author.points = Math.max(0, (author.points || 0) - 0.2);
+        author.points = Math.max(0, Math.round((author.points || 0) - 1));
         await author.save();
       }
     } else {
@@ -370,14 +370,14 @@ exports.votePost = async (req, res) => {
       post.votedBy.push(userId);
       post.helpfulVotes += 1;
 
-      // Update author's helpful votes and award 0.2 points per like
+      // Update author's helpful votes and award 1 point per like
       const author = await User.findById(post.author);
       if (author) {
         if (!author.forumStats) {
           author.forumStats = { posts: 0, helpfulVotes: 0 };
         }
         author.forumStats.helpfulVotes = (author.forumStats.helpfulVotes || 0) + 1;
-        author.points = (author.points || 0) + 0.2;
+        author.points = Math.round((author.points || 0) + 1);
         await author.save();
         
         // Check wave influencer badge (100 likes)
@@ -435,7 +435,7 @@ exports.voteReply = async (req, res) => {
       const replyAuthor = await User.findById(reply.author);
       if (replyAuthor && replyAuthor.forumStats) {
         replyAuthor.forumStats.helpfulVotes = Math.max(0, (replyAuthor.forumStats.helpfulVotes || 0) - 1);
-        replyAuthor.points = Math.max(0, (replyAuthor.points || 0) - 0.2);
+        replyAuthor.points = Math.max(0, Math.round((replyAuthor.points || 0) - 1));
         await replyAuthor.save();
       }
     } else {
@@ -448,7 +448,7 @@ exports.voteReply = async (req, res) => {
           replyAuthor.forumStats = { posts: 0, helpfulVotes: 0 };
         }
         replyAuthor.forumStats.helpfulVotes = (replyAuthor.forumStats.helpfulVotes || 0) + 1;
-        replyAuthor.points = (replyAuthor.points || 0) + 0.2;
+        replyAuthor.points = Math.round((replyAuthor.points || 0) + 1);
         await replyAuthor.save();
       }
     }

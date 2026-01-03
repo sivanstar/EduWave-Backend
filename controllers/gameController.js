@@ -365,7 +365,7 @@ exports.submitGameResult = async (req, res) => {
         // Update User points
         const hostUser = await User.findById(duel.hostId);
         if (hostUser) {
-          hostUser.points = (hostUser.points || 0) + 5;
+          hostUser.points = Math.round((hostUser.points || 0) + 5);
           await hostUser.save();
           
           // Check badges
@@ -380,7 +380,7 @@ exports.submitGameResult = async (req, res) => {
         await opponentStats.save();
         const opponentUser = await User.findById(duel.opponentId);
         if (opponentUser) {
-          opponentUser.points = (opponentUser.points || 0) + 2;
+          opponentUser.points = Math.round((opponentUser.points || 0) + 2);
           await opponentUser.save();
           const badgeService = require('../utils/badgeService');
           await badgeService.checkPointBadges(opponentUser._id);
@@ -394,7 +394,7 @@ exports.submitGameResult = async (req, res) => {
         await stats.save();
         const opponentUser = await User.findById(duel.opponentId);
         if (opponentUser) {
-          opponentUser.points = (opponentUser.points || 0) + 5;
+          opponentUser.points = Math.round((opponentUser.points || 0) + 5);
           await opponentUser.save();
           
           // Check badges
@@ -410,7 +410,7 @@ exports.submitGameResult = async (req, res) => {
         await hostStats.save();
         const hostUser = await User.findById(duel.hostId);
         if (hostUser) {
-          hostUser.points = (hostUser.points || 0) + 2;
+          hostUser.points = Math.round((hostUser.points || 0) + 2);
           await hostUser.save();
           const badgeService = require('../utils/badgeService');
           await badgeService.checkPointBadges(hostUser._id);
@@ -421,7 +421,7 @@ exports.submitGameResult = async (req, res) => {
         stats.pointsEarned += 2;
         const opponentUser = await User.findById(duel.opponentId);
         if (opponentUser) {
-          opponentUser.points = (opponentUser.points || 0) + 2;
+          opponentUser.points = Math.round((opponentUser.points || 0) + 2);
           await opponentUser.save();
         }
         
@@ -431,7 +431,7 @@ exports.submitGameResult = async (req, res) => {
         await hostStats.save();
         const hostUser = await User.findById(duel.hostId);
         if (hostUser) {
-          hostUser.points = (hostUser.points || 0) + 2;
+          hostUser.points = Math.round((hostUser.points || 0) + 2);
           await hostUser.save();
         }
       }
