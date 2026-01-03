@@ -362,17 +362,19 @@ exports.votePost = async (req, res) => {
 
       // Update author's helpful votes and award 0.2 points per like
       const author = await User.findById(post.author);
-      if (!author.forumStats) {
-        author.forumStats = { posts: 0, helpfulVotes: 0 };
+      if (author) {
+        if (!author.forumStats) {
+          author.forumStats = { posts: 0, helpfulVotes: 0 };
+        }
+        author.forumStats.helpfulVotes = (author.forumStats.helpfulVotes || 0) + 1;
+        author.points = (author.points || 0) + 0.2;
+        await author.save();
+        
+        // Check wave influencer badge (100 likes)
+        const badgeService = require('../utils/badgeService');
+        await badgeService.checkWaveInfluencer(author._id);
+        await badgeService.checkPointBadges(author._id);
       }
-      author.forumStats.helpfulVotes = (author.forumStats.helpfulVotes || 0) + 1;
-      author.points = (author.points || 0) + 0.2;
-      await author.save();
-      
-      // Check wave influencer badge (100 likes)
-      const badgeService = require('../utils/badgeService');
-      await badgeService.checkWaveInfluencer(author._id);
-      await badgeService.checkPointBadges(author._id);
     }
 
     await post.save();
@@ -431,12 +433,14 @@ exports.voteReply = async (req, res) => {
       reply.helpfulVotes += 1;
 
       const replyAuthor = await User.findById(reply.author);
-      if (!replyAuthor.forumStats) {
-        replyAuthor.forumStats = { posts: 0, helpfulVotes: 0 };
+      if (replyAuthor) {
+        if (!replyAuthor.forumStats) {
+          replyAuthor.forumStats = { posts: 0, helpfulVotes: 0 };
+        }
+        replyAuthor.forumStats.helpfulVotes = (replyAuthor.forumStats.helpfulVotes || 0) + 1;
+        replyAuthor.points = (replyAuthor.points || 0) + 0.2;
+        await replyAuthor.save();
       }
-      replyAuthor.forumStats.helpfulVotes = (replyAuthor.forumStats.helpfulVotes || 0) + 1;
-      replyAuthor.points = (replyAuthor.points || 0) + 0.2;
-      await replyAuthor.save();
     }
 
     await post.save();
