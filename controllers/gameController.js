@@ -135,6 +135,14 @@ exports.joinDuel = async (req, res) => {
       });
     }
 
+    // Check if duel already has an opponent (prevent race condition)
+    if (duel.opponentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'This duel already has an opponent',
+      });
+    }
+
     if (duel.status !== 'waiting') {
       return res.status(400).json({
         success: false,
@@ -159,19 +167,43 @@ exports.joinDuel = async (req, res) => {
     }
 
     // Joining duels is unlimited for all users - no limit checks needed
-    // Update duel
-    duel.opponentId = req.user._id;
-    duel.opponentName = req.user.fullName;
-    duel.status = 'locked';
-    await duel.save();
+    // Use findOneAndUpdate with atomic operation to prevent race conditions
+    const updatedDuel = await GameSession.findOneAndUpdate(
+      { 
+        duelKey: duelKey.toUpperCase(),
+        status: 'waiting',
+        opponentId: null // Only update if no opponent exists
+      },
+      {
+        opponentId: req.user._id,
+        opponentName: req.user.fullName,
+        status: 'locked',
+      },
+      { new: true }
+    );
+
+    if (!updatedDuel) {
+      // Duel was already taken or status changed
+      const currentDuel = await GameSession.findOne({ duelKey: duelKey.toUpperCase() });
+      if (currentDuel && currentDuel.opponentId) {
+        return res.status(400).json({
+          success: false,
+          message: 'This duel already has an opponent',
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Unable to join duel. It may have been cancelled or already started.',
+      });
+    }
 
     res.status(200).json({
       success: true,
       data: {
-        duelKey: duel.duelKey,
-        topic: duel.topic,
-        numQuestions: duel.numQuestions,
-        hostName: duel.hostName,
+        duelKey: updatedDuel.duelKey,
+        topic: updatedDuel.topic,
+        numQuestions: updatedDuel.numQuestions,
+        hostName: updatedDuel.hostName,
       },
     });
   } catch (error) {
